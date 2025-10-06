@@ -1,384 +1,266 @@
-class RaiParadiseApp {
+class SimpleApp {
     constructor() {
         this.currentTab = 'wheel';
-        this.coinBalance = 0;
-        this.ticketBalance = 3;
-        this.purchasedTickets = {
-            beer: 0,
-            massage: 0,
-            sauna: 0,
-            iphone: 0
+        this.tickets = 3;
+        this.coins = 0;
+        this.stats = {
+            spins: 0,
+            coinsWon: 0,
+            friends: 0
         };
-        this.userStats = {
-            totalSpins: 0,
-            totalCoinsWon: 0,
-            friendsInvited: 0,
-            tasksCompleted: 0
-        };
-        
-        // Состояние выполненных заданий
-        this.completedTasks = {
-            telegram: false,
-            instagram: false,
-            video: false,
-            invite: false,
-            warmup: false
-        };
-        
-        // Прогресс по прогрева-гайду
-        this.warmupProgress = {
-            block1: Array(4).fill(false), // 4 видео в блоке 1
-            block2: Array(4).fill(false), // 4 видео в блоке 2  
-            block3: Array(4).fill(false), // 4 видео в блоке 3
-            block4: Array(4).fill(false)  // 4 видео в блоке 4
-        };
-        
-        // Реферальная статистика
-        this.referralStats = {
-            totalReferrals: 0,
-            earnedTickets: 0,
-            earnedCoins: 0
-        };
-        
         this.init();
     }
-    
+
     init() {
-        this.loadUserData();
+        this.loadData();
         this.initWheel();
-        this.setupEventListeners();
-        this.initTelegram();
+        this.setupEvents();
         this.updateUI();
-        this.updateWarmupProgress();
     }
-    
-    loadUserData() {
-        const savedCoins = localStorage.getItem('raiCoins');
-        const savedTickets = localStorage.getItem('spinTickets');
-        const savedPurchased = localStorage.getItem('purchasedTickets');
-        const savedStats = localStorage.getItem('userStats');
-        const savedTasks = localStorage.getItem('completedTasks');
-        const savedWarmup = localStorage.getItem('warmupProgress');
-        const savedReferral = localStorage.getItem('referralStats');
-        
-        if (savedCoins) this.coinBalance = parseInt(savedCoins);
-        if (savedTickets) this.ticketBalance = parseInt(savedTickets);
-        if (savedPurchased) this.purchasedTickets = JSON.parse(savedPurchased);
-        if (savedStats) this.userStats = JSON.parse(savedStats);
-        if (savedTasks) this.completedTasks = JSON.parse(savedTasks);
-        if (savedWarmup) this.warmupProgress = JSON.parse(savedWarmup);
-        if (savedReferral) this.referralStats = JSON.parse(savedReferral);
+
+    loadData() {
+        const saved = localStorage.getItem('raiApp');
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.tickets = data.tickets || 3;
+            this.coins = data.coins || 0;
+            this.stats = data.stats || { spins: 0, coinsWon: 0, friends: 0 };
+        }
     }
-    
-    saveUserData() {
-        localStorage.setItem('raiCoins', this.coinBalance.toString());
-        localStorage.setItem('spinTickets', this.ticketBalance.toString());
-        localStorage.setItem('purchasedTickets', JSON.stringify(this.purchasedTickets));
-        localStorage.setItem('userStats', JSON.stringify(this.userStats));
-        localStorage.setItem('completedTasks', JSON.stringify(this.completedTasks));
-        localStorage.setItem('warmupProgress', JSON.stringify(this.warmupProgress));
-        localStorage.setItem('referralStats', JSON.stringify(this.referralStats));
+
+    saveData() {
+        const data = {
+            tickets: this.tickets,
+            coins: this.coins,
+            stats: this.stats
+        };
+        localStorage.setItem('raiApp', JSON.stringify(data));
     }
-    
+
     initWheel() {
         this.canvas = document.getElementById('wheelCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.spinButton = document.getElementById('spinButton');
         this.isSpinning = false;
-        this.rotation = 0;
         
         this.prizes = [
-            { name: "Рай коины", probability: 60, color: "#FF6B6B", type: "coins" },
-            { name: "Поцелуй от Рай", probability: 20, color: "#4ECDC4", type: "kiss" },
-            { name: "Доп. спин", probability: 10, color: "#45B7D1", type: "ticket" },
-            { name: "Бутыль пива", probability: 5, color: "#FFD166", type: "beer" },
-            { name: "Поездка на Пхукет", probability: 5, color: "#9B5DE5", type: "trip" }
+            { name: "Коины", prob: 60, color: "#FF6B6B", type: "coins" },
+            { name: "Поцелуй", prob: 20, color: "#4ECDC4", type: "kiss" },
+            { name: "Билет", prob: 10, color: "#45B7D1", type: "ticket" },
+            { name: "Пиво", prob: 5, color: "#FFD166", type: "beer" },
+            { name: "Пхукет", prob: 5, color: "#9B5DE5", type: "trip" }
         ];
         
         this.drawWheel();
     }
-    
-    // ... (остальные методы остаются такими же до раздела СИСТЕМА ЗАДАНИЙ)
-    
-    // СИСТЕМА ПРОГРЕВА-ГАЙДА
-    openWarmupGuide() {
-        if (this.completedTasks.warmup) {
-            this.showResultModal('✅ Вы уже завершили прогрев-гайд!');
-            return;
-        }
+
+    drawWheel() {
+        const ctx = this.ctx;
+        const center = this.canvas.width / 2;
+        const radius = center - 10;
         
-        this.showModal('warmupModal');
-        this.updateWarmupUI();
-    }
-    
-    watchVideo(blockNumber, videoNumber) {
-        if (this.completedTasks.warmup) return;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        const blockKey = `block${blockNumber}`;
-        const videoIndex = videoNumber - 1;
+        let startAngle = 0;
+        const total = this.prizes.reduce((sum, p) => sum + p.prob, 0);
         
-        // Помечаем видео как просмотренное
-        if (!this.warmupProgress[blockKey][videoIndex]) {
-            this.warmupProgress[blockKey][videoIndex] = true;
-            this.saveUserData();
-            this.updateWarmupUI();
-            this.updateWarmupProgress();
+        this.prizes.forEach(prize => {
+            const angle = (2 * Math.PI * prize.prob) / total;
+            const endAngle = startAngle + angle;
             
-            // Проверяем, завершен ли блок
-            this.checkBlockCompletion(blockNumber);
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.arc(center, center, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = prize.color;
+            ctx.fill();
             
-            // Проверяем, завершен ли весь гайд
-            this.checkWarmupCompletion();
-        }
+            startAngle = endAngle;
+        });
     }
-    
-    checkBlockCompletion(blockNumber) {
-        const blockKey = `block${blockNumber}`;
-        const isBlockComplete = this.warmupProgress[blockKey].every(video => video === true);
+
+    setupEvents() {
+        // Вкладки
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Колесо
+        document.getElementById('spinButton').addEventListener('click', () => {
+            this.spinWheel();
+        });
+
+        // Реферальные кнопки
+        document.getElementById('shareButton').addEventListener('click', () => {
+            this.share();
+        });
+
+        document.getElementById('copyButton').addEventListener('click', () => {
+            this.copy();
+        });
+    }
+
+    switchTab(tab) {
+        this.currentTab = tab;
         
-        if (isBlockComplete) {
-            // Вознаграждение за завершение блока
-            this.ticketBalance += 2;
-            this.coinBalance += 200;
-            this.saveUserData();
-            this.updateUI();
-            
-            this.showResultModal(`🎉 Блок ${blockNumber} завершен! Получено: 2 спин-билета + 200 рай коинов`);
-        }
-    }
-    
-    checkWarmupCompletion() {
-        // Проверяем, все ли блоки завершены
-        const allBlocksComplete = [1, 2, 3, 4].every(blockNumber => {
-            const blockKey = `block${blockNumber}`;
-            return this.warmupProgress[blockKey].every(video => video === true);
+        // Обновляем активные кнопки
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
         });
         
-        if (allBlocksComplete && !this.completedTasks.warmup) {
-            this.completeWarmup();
-        }
+        // Показываем активную вкладку
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === tab + '-tab');
+        });
     }
-    
-    completeWarmup() {
-        // Основное вознаграждение за весь гайд
-        this.ticketBalance += 10;
-        this.coinBalance += 1000;
-        this.completedTasks.warmup = true;
-        this.userStats.tasksCompleted++;
+
+    spinWheel() {
+        if (this.isSpinning || this.tickets <= 0) return;
         
-        this.saveUserData();
+        this.isSpinning = true;
+        this.tickets--;
+        this.stats.spins++;
+        
         this.updateUI();
-        this.updateTaskButtons();
         
-        this.showResultModal('🎉 Поздравляем! Вы завершили прогрев-гайд и получили 10 спин-билетов и 1000 рай коинов!');
-        this.hideModal('warmupModal');
-    }
-    
-    updateWarmupUI() {
-        // Обновляем состояние кнопок просмотра в модальном окне
-        for (let blockNumber = 1; blockNumber <= 4; blockNumber++) {
-            const blockKey = `block${blockNumber}`;
-            const blockElement = document.querySelector(`.warmup-block[data-block="${blockNumber}"]`);
-            
-            if (blockElement) {
-                this.warmupProgress[blockKey].forEach((isWatched, videoIndex) => {
-                    const videoElement = blockElement.querySelector(`.video-item[data-video="${videoIndex + 1}"]`);
-                    const watchButton = videoElement.querySelector('.watch-btn');
-                    
-                    if (isWatched) {
-                        videoElement.classList.add('watched');
-                        watchButton.textContent = '✅ Просмотрено';
-                        watchButton.disabled = true;
-                        watchButton.classList.add('completed');
-                    }
-                });
-            }
-        }
-    }
-    
-    updateWarmupProgress() {
-        // Обновляем прогресс-бары на главной странице
-        let completedBlocks = 0;
+        // Выбор приза
+        const random = Math.random() * 100;
+        let sum = 0;
+        let prize = null;
         
-        for (let blockNumber = 1; blockNumber <= 4; blockNumber++) {
-            const blockKey = `block${blockNumber}`;
-            const watchedVideos = this.warmupProgress[blockKey].filter(video => video).length;
-            const progressPercentage = (watchedVideos / 4) * 100;
-            
-            // Обновляем прогресс-бар
-            const progressFill = document.querySelector(`.progress-block[data-block="${blockNumber}"] .progress-fill`);
-            if (progressFill) {
-                progressFill.style.width = `${progressPercentage}%`;
-                progressFill.setAttribute('data-progress', watchedVideos);
-            }
-            
-            if (watchedVideos === 4) {
-                completedBlocks++;
+        for (const p of this.prizes) {
+            sum += p.prob;
+            if (random <= sum) {
+                prize = p;
+                break;
             }
         }
         
-        // Обновляем общий прогресс
-        document.getElementById('warmupProgress').textContent = `${completedBlocks}/4`;
+        this.animateSpin(prize);
     }
-    
-    // УЛУЧШЕННАЯ РЕФЕРАЛЬНАЯ СИСТЕМА
-    shareReferral() {
-        const referralLink = this.generateReferralLink();
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.shareUrl(referralLink, 
-                'Присоединяйся к Rai Paradise! 🎰\n\n' +
-                '🎫 Крути колесо и выигрывай призы\n' +
-                '🪙 Зарабатывай рай коины\n' +
-                '🎁 Участвуй в розыгрышах\n' +
-                '🔥 Знакомься с уникальным лором\n\n' +
-                'Переходи по ссылке и начни свой путь!'
-            );
-        } else {
-            // Fallback для браузера
-            const shareText = `Присоединяйся к Rai Paradise! 🎰
 
-🎫 Крути колесо и выигрывай призы
-🪙 Зарабатывай рай коины  
-🎁 Участвуй в розыгрышах
-🔥 Знакомься с уникальным лором
-
-Переходи по ссылке: ${referralLink}`;
-
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Rai Paradise - Колесо Фортуны',
-                    text: shareText,
-                    url: referralLink,
-                });
+    animateSpin(prize) {
+        const duration = 3000;
+        const startTime = Date.now();
+        const startRot = 0;
+        const extra = 5;
+        const targetRot = extra * 360 + Math.random() * 360;
+        
+        const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            const rotation = startRot + (targetRot - startRot) * ease;
+            
+            this.canvas.style.transform = `rotate(${rotation}deg)`;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
             } else {
-                alert(shareText);
+                this.isSpinning = false;
+                this.processPrize(prize);
             }
+        };
+        
+        animate();
+    }
+
+    processPrize(prize) {
+        let message = '';
+        
+        switch(prize.type) {
+            case 'coins':
+                const coinAmount = Math.floor(Math.random() * 41) + 10;
+                this.coins += coinAmount;
+                this.stats.coinsWon += coinAmount;
+                message = `Выиграно ${coinAmount} коинов!`;
+                break;
+            case 'ticket':
+                this.tickets++;
+                message = 'Выиграли дополнительный билет!';
+                break;
+            case 'kiss':
+                message = 'Выиграли поцелуй от Рай райского!';
+                break;
+            case 'beer':
+                message = 'Выиграли бутыль пива!';
+                break;
+            case 'trip':
+                message = 'Выиграли поездку на Пхукет!';
+                break;
         }
         
-        // Отмечаем задание "пригласить друга" как выполненное
-        if (!this.completedTasks.invite) {
-            this.completeTask('invite');
-        }
-    }
-    
-    copyReferral() {
-        const referralLink = this.generateReferralLink();
-        const shareText = `Присоединяйся к Rai Paradise! 🎰
-
-🎫 Крути колесо и выигрывай призы
-🪙 Зарабатывай рай коины  
-🎁 Участвуй в розыгрышах
-🔥 Знакомься с уникальным лором
-
-Переходи по ссылке: ${referralLink}`;
-
-        navigator.clipboard.writeText(shareText).then(() => {
-            this.showResultModal('📋 Реферальное сообщение скопировано в буфер обмена!');
-        }).catch(() => {
-            // Fallback для старых браузеров
-            const textArea = document.createElement('textarea');
-            textArea.value = shareText;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            this.showResultModal('📋 Реферальное сообщение скопировано!');
-        });
-        
-        // Отмечаем задание "пригласить друга" как выполненное
-        if (!this.completedTasks.invite) {
-            this.completeTask('invite');
-        }
-    }
-    
-    generateReferralLink() {
-        // Генерируем уникальную реферальную ссылку
-        const userId = this.generateUserId();
-        return `https://t.me/your_bot?start=ref_${userId}`;
-    }
-    
-    generateUserId() {
-        // Генерируем или получаем ID пользователя
-        let userId = localStorage.getItem('userId');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('userId', userId);
-        }
-        return userId;
-    }
-    
-    // Метод для обработки реферального бонуса (вызывается когда кто-то переходит по ссылке)
-    addReferralBonus() {
-        this.ticketBalance += 3;
-        this.coinBalance += 50;
-        this.referralStats.totalReferrals++;
-        this.referralStats.earnedTickets += 3;
-        this.referralStats.earnedCoins += 50;
-        this.userStats.friendsInvited++;
-        
-        this.saveUserData();
+        this.saveData();
         this.updateUI();
-        this.updateReferralStats();
-        
-        this.showResultModal('🎉 Бонус за приглашенного друга: 3 билета + 50 рай коинов!');
+        this.showModal(message);
     }
-    
-    updateReferralStats() {
-        // Обновляем статистику реферальной программы
-        document.getElementById('referralCount').textContent = this.referralStats.totalReferrals;
-        document.getElementById('referralEarned').textContent = this.referralStats.earnedCoins;
-        
-        document.getElementById('profileReferralCount').textContent = this.referralStats.totalReferrals;
-        document.getElementById('profileReferralTickets').textContent = this.referralStats.earnedTickets;
-        document.getElementById('profileReferralCoins').textContent = this.referralStats.earnedCoins;
-    }
-    
-    // СИСТЕМА ЗАДАНИЙ
-    completeTask(taskId) {
-        if (this.completedTasks[taskId]) {
-            this.showResultModal('❌ Это задание уже выполнено!');
-            return;
-        }
-        
-        // Награда за задание
-        this.ticketBalance += 3;
-        this.coinBalance += 50;
-        this.completedTasks[taskId] = true;
-        this.userStats.tasksCompleted++;
-        
-        this.saveUserData();
+
+    completeTask(task) {
+        this.tickets += 3;
+        this.coins += 50;
         this.updateUI();
-        this.updateTaskButtons();
+        this.saveData();
+        this.showModal('Задание выполнено! +3 билета, +50 коинов');
+    }
+
+    buyTicket(event, cost) {
+        if (this.coins >= cost) {
+            this.coins -= cost;
+            this.updateUI();
+            this.saveData();
+            this.showModal('Билет куплен!');
+        } else {
+            this.showModal('Недостаточно коинов');
+        }
+    }
+
+    openWarmup() {
+        this.tickets += 10;
+        this.coins += 1000;
+        this.updateUI();
+        this.saveData();
+        this.showModal('Прогрев пройден! +10 билетов, +1000 коинов');
+    }
+
+    share() {
+        const link = 'https://t.me/your_bot';
+        if (navigator.share) {
+            navigator.share({
+                title: 'Rai Paradise',
+                text: 'Присоединяйся!',
+                url: link
+            });
+        } else {
+            this.showModal('Ссылка скопирована: ' + link);
+        }
+    }
+
+    copy() {
+        const link = 'https://t.me/your_bot';
+        navigator.clipboard.writeText(link);
+        this.showModal('Ссылка скопирована');
+    }
+
+    showModal(text) {
+        document.getElementById('modalText').textContent = text;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    updateUI() {
+        document.getElementById('ticketCount').textContent = this.tickets;
+        document.getElementById('coinBalance').textContent = this.coins;
+        document.getElementById('totalSpins').textContent = this.stats.spins;
+        document.getElementById('totalCoins').textContent = this.stats.coinsWon;
+        document.getElementById('friendsCount').textContent = this.stats.friends;
         
-        this.showResultModal('🎉 Задание выполнено! Получено: 3 спин-билета + 50 рай коинов');
+        document.getElementById('spinButton').disabled = this.tickets <= 0 || this.isSpinning;
     }
-    
-    updateTaskButtons() {
-        // Обновляем состояние кнопок заданий
-        Object.keys(this.completedTasks).forEach(taskId => {
-            const button = document.querySelector(`[data-task="${taskId}"]`);
-            if (button) {
-                if (this.completedTasks[taskId]) {
-                    button.textContent = '✅ Выполнено';
-                    button.disabled = true;
-                    button.classList.add('completed');
-                } else {
-                    button.disabled = false;
-                    button.classList.remove('completed');
-                }
-            }
-        });
-    }
-    
-    // ... (остальные методы остаются без изменений)
 }
 
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-    window.raiApp = new RaiParadiseApp();
-    
-    // Обработчик закрытия модального окна прогрева
-    document.getElementById('closeWarmupModal').addEventListener('click', () => {
-        window.raiApp.hideModal('warmupModal');
-    });
-});
+// Запуск приложения
+const app = new SimpleApp();
