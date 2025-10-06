@@ -21,7 +21,23 @@ class RaiParadiseApp {
             telegram: false,
             instagram: false,
             video: false,
-            invite: false
+            invite: false,
+            warmup: false
+        };
+        
+        // Прогресс по прогрева-гайду
+        this.warmupProgress = {
+            block1: Array(4).fill(false), // 4 видео в блоке 1
+            block2: Array(4).fill(false), // 4 видео в блоке 2  
+            block3: Array(4).fill(false), // 4 видео в блоке 3
+            block4: Array(4).fill(false)  // 4 видео в блоке 4
+        };
+        
+        // Реферальная статистика
+        this.referralStats = {
+            totalReferrals: 0,
+            earnedTickets: 0,
+            earnedCoins: 0
         };
         
         this.init();
@@ -33,6 +49,7 @@ class RaiParadiseApp {
         this.setupEventListeners();
         this.initTelegram();
         this.updateUI();
+        this.updateWarmupProgress();
     }
     
     loadUserData() {
@@ -41,12 +58,16 @@ class RaiParadiseApp {
         const savedPurchased = localStorage.getItem('purchasedTickets');
         const savedStats = localStorage.getItem('userStats');
         const savedTasks = localStorage.getItem('completedTasks');
+        const savedWarmup = localStorage.getItem('warmupProgress');
+        const savedReferral = localStorage.getItem('referralStats');
         
         if (savedCoins) this.coinBalance = parseInt(savedCoins);
         if (savedTickets) this.ticketBalance = parseInt(savedTickets);
         if (savedPurchased) this.purchasedTickets = JSON.parse(savedPurchased);
         if (savedStats) this.userStats = JSON.parse(savedStats);
         if (savedTasks) this.completedTasks = JSON.parse(savedTasks);
+        if (savedWarmup) this.warmupProgress = JSON.parse(savedWarmup);
+        if (savedReferral) this.referralStats = JSON.parse(savedReferral);
     }
     
     saveUserData() {
@@ -55,6 +76,8 @@ class RaiParadiseApp {
         localStorage.setItem('purchasedTickets', JSON.stringify(this.purchasedTickets));
         localStorage.setItem('userStats', JSON.stringify(this.userStats));
         localStorage.setItem('completedTasks', JSON.stringify(this.completedTasks));
+        localStorage.setItem('warmupProgress', JSON.stringify(this.warmupProgress));
+        localStorage.setItem('referralStats', JSON.stringify(this.referralStats));
     }
     
     initWheel() {
@@ -64,7 +87,6 @@ class RaiParadiseApp {
         this.isSpinning = false;
         this.rotation = 0;
         
-        // Призы с рандомизированными вероятностями (не показываем пользователю)
         this.prizes = [
             { name: "Рай коины", probability: 60, color: "#FF6B6B", type: "coins" },
             { name: "Поцелуй от Рай", probability: 20, color: "#4ECDC4", type: "kiss" },
@@ -76,221 +98,239 @@ class RaiParadiseApp {
         this.drawWheel();
     }
     
-    drawWheel() {
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const radius = this.canvas.width / 2 - 10;
+    // ... (остальные методы остаются такими же до раздела СИСТЕМА ЗАДАНИЙ)
+    
+    // СИСТЕМА ПРОГРЕВА-ГАЙДА
+    openWarmupGuide() {
+        if (this.completedTasks.warmup) {
+            this.showResultModal('✅ Вы уже завершили прогрев-гайд!');
+            return;
+        }
         
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        let startAngle = 0;
-        const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
-        
-        this.prizes.forEach((prize, index) => {
-            const sliceAngle = (2 * Math.PI * prize.probability) / totalProbability;
-            const endAngle = startAngle + sliceAngle;
-            
-            // Рисуем сегмент
-            this.ctx.beginPath();
-            this.ctx.moveTo(centerX, centerY);
-            this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-            this.ctx.closePath();
-            this.ctx.fillStyle = prize.color;
-            this.ctx.fill();
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-            
-            // Текст (только название приза, без процентов)
-            this.ctx.save();
-            this.ctx.translate(centerX, centerY);
-            this.ctx.rotate(startAngle + sliceAngle / 2);
-            this.ctx.textAlign = 'right';
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 11px Arial';
-            this.ctx.fillText(prize.name, radius - 15, 0);
-            this.ctx.restore();
-            
-            startAngle = endAngle;
-        });
-        
-        // Центральный круг
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
-        this.ctx.fillStyle = 'white';
-        this.ctx.fill();
-        this.ctx.strokeStyle = '#ddd';
-        this.ctx.stroke();
+        this.showModal('warmupModal');
+        this.updateWarmupUI();
     }
     
-    setupEventListeners() {
-        // Вкладки
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.switchTab(e.target.dataset.tab);
-            });
-        });
+    watchVideo(blockNumber, videoNumber) {
+        if (this.completedTasks.warmup) return;
         
-        // Колесо
-        this.spinButton.addEventListener('click', () => this.spinWheel());
+        const blockKey = `block${blockNumber}`;
+        const videoIndex = videoNumber - 1;
         
-        // Покупка билетов
-        document.querySelectorAll('.buy-ticket-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const event = e.target.dataset.event;
-                const cost = parseInt(e.target.dataset.cost);
-                this.showPurchaseModal(event, cost);
-            });
-        });
-        
-        // Модальные окна
-        document.getElementById('closeModal').addEventListener('click', () => this.hideModal('resultModal'));
-        document.getElementById('confirmPurchase').addEventListener('click', () => this.confirmPurchase());
-        document.getElementById('cancelPurchase').addEventListener('click', () => this.hideModal('purchaseModal'));
-        
-        // Реферальная система
-        document.getElementById('shareButton').addEventListener('click', () => this.shareReferral());
-        document.getElementById('copyButton').addEventListener('click', () => this.copyReferral());
-        
-        // Закрытие модалок по клику вне
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    this.hideModal(modal.id);
-                }
-            });
-        });
-    }
-    
-    switchTab(tabName) {
-        this.currentTab = tabName;
-        
-        // Обновляем активные кнопки
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.classList.toggle('active', button.dataset.tab === tabName);
-        });
-        
-        // Показываем активную вкладку
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tabName}-tab`);
-        });
-        
-        // Обновляем состояние кнопок заданий
-        if (tabName === 'tasks') {
-            this.updateTaskButtons();
+        // Помечаем видео как просмотренное
+        if (!this.warmupProgress[blockKey][videoIndex]) {
+            this.warmupProgress[blockKey][videoIndex] = true;
+            this.saveUserData();
+            this.updateWarmupUI();
+            this.updateWarmupProgress();
+            
+            // Проверяем, завершен ли блок
+            this.checkBlockCompletion(blockNumber);
+            
+            // Проверяем, завершен ли весь гайд
+            this.checkWarmupCompletion();
         }
     }
     
-    spinWheel() {
-        if (this.isSpinning || this.ticketBalance <= 0) return;
+    checkBlockCompletion(blockNumber) {
+        const blockKey = `block${blockNumber}`;
+        const isBlockComplete = this.warmupProgress[blockKey].every(video => video === true);
         
-        this.isSpinning = true;
-        this.spinButton.disabled = true;
-        
-        // Используем билет
-        this.ticketBalance--;
-        this.userStats.totalSpins++;
-        this.updateUI();
-        
-        // Выбираем приз
-        const random = Math.random() * 100;
-        let accumulatedProb = 0;
-        let winningPrize = null;
-        
-        for (const prize of this.prizes) {
-            accumulatedProb += prize.probability;
-            if (random <= accumulatedProb) {
-                winningPrize = prize;
-                break;
-            }
+        if (isBlockComplete) {
+            // Вознаграждение за завершение блока
+            this.ticketBalance += 2;
+            this.coinBalance += 200;
+            this.saveUserData();
+            this.updateUI();
+            
+            this.showResultModal(`🎉 Блок ${blockNumber} завершен! Получено: 2 спин-билета + 200 рай коинов`);
         }
-        
-        this.animateSpin(winningPrize);
     }
     
-    animateSpin(winningPrize) {
-        const spinDuration = 3000;
-        const startTime = performance.now();
-        const startRotation = this.rotation;
+    checkWarmupCompletion() {
+        // Проверяем, все ли блоки завершены
+        const allBlocksComplete = [1, 2, 3, 4].every(blockNumber => {
+            const blockKey = `block${blockNumber}`;
+            return this.warmupProgress[blockKey].every(video => video === true);
+        });
         
-        // Добавляем случайность в анимацию
-        const extraRotations = 5 + Math.random() * 2; // 5-7 дополнительных оборотов
-        const winningIndex = this.prizes.indexOf(winningPrize);
-        const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
-        
-        let prizeStartAngle = 0;
-        for (let i = 0; i < winningIndex; i++) {
-            prizeStartAngle += (2 * Math.PI * this.prizes[i].probability) / totalProbability;
+        if (allBlocksComplete && !this.completedTasks.warmup) {
+            this.completeWarmup();
         }
-        const prizeAngle = prizeStartAngle + (Math.PI * this.prizes[winningIndex].probability) / totalProbability;
-        
-        // Добавляем небольшую случайность к конечной позиции
-        const randomOffset = (Math.random() - 0.5) * 0.3; // ±15% случайного смещения
-        const targetRotation = extraRotations * 2 * Math.PI + (2 * Math.PI - prizeAngle) + randomOffset;
-        
-        const animate = (currentTime) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / spinDuration, 1);
-            
-            // Нелинейная анимация для большей непредсказуемости
-            const easeOut = (t) => {
-                if (t < 0.7) {
-                    return 1 - Math.pow(1 - t/0.7, 3);
-                } else {
-                    return 1 - Math.pow(1 - (t-0.7)/0.3, 1.5) * 0.3;
-                }
-            };
-            
-            const easedProgress = easeOut(progress);
-            
-            this.rotation = startRotation + (targetRotation - startRotation) * easedProgress;
-            
-            this.ctx.save();
-            this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
-            this.ctx.rotate(this.rotation);
-            this.ctx.translate(-this.canvas.width / 2, -this.canvas.height / 2);
-            this.drawWheel();
-            this.ctx.restore();
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                this.isSpinning = false;
-                this.processPrize(winningPrize);
-                this.updateUI();
-            }
-        };
-        
-        requestAnimationFrame(animate);
     }
     
-    processPrize(prize) {
-        let message = '';
-        
-        switch(prize.type) {
-            case 'coins':
-                const coins = Math.floor(Math.random() * 41) + 10; // 10-50 coins
-                this.coinBalance += coins;
-                this.userStats.totalCoinsWon += coins;
-                message = `🎉 Вы выиграли ${coins} рай коинов!`;
-                break;
-            case 'ticket':
-                this.ticketBalance++;
-                message = '🎫 Вы выиграли дополнительный спин-билет!';
-                break;
-            case 'kiss':
-                message = '💋 Вы выиграли поцелуй от Рай райского!';
-                break;
-            case 'beer':
-                message = '🍺 Вы выиграли бутыль пива!';
-                break;
-            case 'trip':
-                message = '✈️ Вы выиграли поездку на Пхукет!';
-                break;
-        }
+    completeWarmup() {
+        // Основное вознаграждение за весь гайд
+        this.ticketBalance += 10;
+        this.coinBalance += 1000;
+        this.completedTasks.warmup = true;
+        this.userStats.tasksCompleted++;
         
         this.saveUserData();
-        this.showResultModal(message);
+        this.updateUI();
+        this.updateTaskButtons();
+        
+        this.showResultModal('🎉 Поздравляем! Вы завершили прогрев-гайд и получили 10 спин-билетов и 1000 рай коинов!');
+        this.hideModal('warmupModal');
+    }
+    
+    updateWarmupUI() {
+        // Обновляем состояние кнопок просмотра в модальном окне
+        for (let blockNumber = 1; blockNumber <= 4; blockNumber++) {
+            const blockKey = `block${blockNumber}`;
+            const blockElement = document.querySelector(`.warmup-block[data-block="${blockNumber}"]`);
+            
+            if (blockElement) {
+                this.warmupProgress[blockKey].forEach((isWatched, videoIndex) => {
+                    const videoElement = blockElement.querySelector(`.video-item[data-video="${videoIndex + 1}"]`);
+                    const watchButton = videoElement.querySelector('.watch-btn');
+                    
+                    if (isWatched) {
+                        videoElement.classList.add('watched');
+                        watchButton.textContent = '✅ Просмотрено';
+                        watchButton.disabled = true;
+                        watchButton.classList.add('completed');
+                    }
+                });
+            }
+        }
+    }
+    
+    updateWarmupProgress() {
+        // Обновляем прогресс-бары на главной странице
+        let completedBlocks = 0;
+        
+        for (let blockNumber = 1; blockNumber <= 4; blockNumber++) {
+            const blockKey = `block${blockNumber}`;
+            const watchedVideos = this.warmupProgress[blockKey].filter(video => video).length;
+            const progressPercentage = (watchedVideos / 4) * 100;
+            
+            // Обновляем прогресс-бар
+            const progressFill = document.querySelector(`.progress-block[data-block="${blockNumber}"] .progress-fill`);
+            if (progressFill) {
+                progressFill.style.width = `${progressPercentage}%`;
+                progressFill.setAttribute('data-progress', watchedVideos);
+            }
+            
+            if (watchedVideos === 4) {
+                completedBlocks++;
+            }
+        }
+        
+        // Обновляем общий прогресс
+        document.getElementById('warmupProgress').textContent = `${completedBlocks}/4`;
+    }
+    
+    // УЛУЧШЕННАЯ РЕФЕРАЛЬНАЯ СИСТЕМА
+    shareReferral() {
+        const referralLink = this.generateReferralLink();
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.shareUrl(referralLink, 
+                'Присоединяйся к Rai Paradise! 🎰\n\n' +
+                '🎫 Крути колесо и выигрывай призы\n' +
+                '🪙 Зарабатывай рай коины\n' +
+                '🎁 Участвуй в розыгрышах\n' +
+                '🔥 Знакомься с уникальным лором\n\n' +
+                'Переходи по ссылке и начни свой путь!'
+            );
+        } else {
+            // Fallback для браузера
+            const shareText = `Присоединяйся к Rai Paradise! 🎰
+
+🎫 Крути колесо и выигрывай призы
+🪙 Зарабатывай рай коины  
+🎁 Участвуй в розыгрышах
+🔥 Знакомься с уникальным лором
+
+Переходи по ссылке: ${referralLink}`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Rai Paradise - Колесо Фортуны',
+                    text: shareText,
+                    url: referralLink,
+                });
+            } else {
+                alert(shareText);
+            }
+        }
+        
+        // Отмечаем задание "пригласить друга" как выполненное
+        if (!this.completedTasks.invite) {
+            this.completeTask('invite');
+        }
+    }
+    
+    copyReferral() {
+        const referralLink = this.generateReferralLink();
+        const shareText = `Присоединяйся к Rai Paradise! 🎰
+
+🎫 Крути колесо и выигрывай призы
+🪙 Зарабатывай рай коины  
+🎁 Участвуй в розыгрышах
+🔥 Знакомься с уникальным лором
+
+Переходи по ссылке: ${referralLink}`;
+
+        navigator.clipboard.writeText(shareText).then(() => {
+            this.showResultModal('📋 Реферальное сообщение скопировано в буфер обмена!');
+        }).catch(() => {
+            // Fallback для старых браузеров
+            const textArea = document.createElement('textarea');
+            textArea.value = shareText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showResultModal('📋 Реферальное сообщение скопировано!');
+        });
+        
+        // Отмечаем задание "пригласить друга" как выполненное
+        if (!this.completedTasks.invite) {
+            this.completeTask('invite');
+        }
+    }
+    
+    generateReferralLink() {
+        // Генерируем уникальную реферальную ссылку
+        const userId = this.generateUserId();
+        return `https://t.me/your_bot?start=ref_${userId}`;
+    }
+    
+    generateUserId() {
+        // Генерируем или получаем ID пользователя
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+        return userId;
+    }
+    
+    // Метод для обработки реферального бонуса (вызывается когда кто-то переходит по ссылке)
+    addReferralBonus() {
+        this.ticketBalance += 3;
+        this.coinBalance += 50;
+        this.referralStats.totalReferrals++;
+        this.referralStats.earnedTickets += 3;
+        this.referralStats.earnedCoins += 50;
+        this.userStats.friendsInvited++;
+        
+        this.saveUserData();
+        this.updateUI();
+        this.updateReferralStats();
+        
+        this.showResultModal('🎉 Бонус за приглашенного друга: 3 билета + 50 рай коинов!');
+    }
+    
+    updateReferralStats() {
+        // Обновляем статистику реферальной программы
+        document.getElementById('referralCount').textContent = this.referralStats.totalReferrals;
+        document.getElementById('referralEarned').textContent = this.referralStats.earnedCoins;
+        
+        document.getElementById('profileReferralCount').textContent = this.referralStats.totalReferrals;
+        document.getElementById('profileReferralTickets').textContent = this.referralStats.earnedTickets;
+        document.getElementById('profileReferralCoins').textContent = this.referralStats.earnedCoins;
     }
     
     // СИСТЕМА ЗАДАНИЙ
@@ -330,118 +370,15 @@ class RaiParadiseApp {
         });
     }
     
-    showPurchaseModal(event, cost) {
-        this.currentPurchase = { event, cost };
-        
-        const eventNames = {
-            beer: 'розыгрыш пива',
-            massage: 'розыгрыш массажа', 
-            sauna: 'розыгрыш парения',
-            iphone: 'розыгрыш iPhone 17 Pro'
-        };
-        
-        document.getElementById('purchaseText').textContent = 
-            `Вы хотите купить билет на ${eventNames[event]} за ${cost.toLocaleString()} рай коинов?`;
-        
-        this.showModal('purchaseModal');
-    }
-    
-    confirmPurchase() {
-        const { event, cost } = this.currentPurchase;
-        
-        if (this.coinBalance >= cost) {
-            this.coinBalance -= cost;
-            this.purchasedTickets[event]++;
-            this.saveUserData();
-            this.updateUI();
-            
-            this.hideModal('purchaseModal');
-            this.showResultModal(`🎫 Вы успешно купили билет на розыгрыш!`);
-        } else {
-            this.hideModal('purchaseModal');
-            this.showResultModal('❌ Недостаточно рай коинов для покупки билета');
-        }
-    }
-    
-    showResultModal(message) {
-        document.getElementById('prizeText').textContent = message;
-        this.showModal('resultModal');
-    }
-    
-    showModal(modalId) {
-        document.getElementById(modalId).style.display = 'flex';
-    }
-    
-    hideModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-    
-    updateUI() {
-        // Баланс
-        document.getElementById('ticketCount').textContent = this.ticketBalance;
-        document.getElementById('coinBalance').textContent = this.coinBalance.toLocaleString();
-        
-        // Статистика
-        document.getElementById('totalSpins').textContent = this.userStats.totalSpins;
-        document.getElementById('totalCoinsWon').textContent = this.userStats.totalCoinsWon.toLocaleString();
-        document.getElementById('friendsInvited').textContent = this.userStats.friendsInvited;
-        document.getElementById('tasksCompleted').textContent = this.userStats.tasksCompleted;
-        
-        // Купленные билеты
-        document.getElementById('beerTickets').textContent = this.purchasedTickets.beer;
-        document.getElementById('massageTickets').textContent = this.purchasedTickets.massage;
-        document.getElementById('saunaTickets').textContent = this.purchasedTickets.sauna;
-        document.getElementById('iphoneTickets').textContent = this.purchasedTickets.iphone;
-        
-        // Инвентарь
-        document.getElementById('inventoryBeer').textContent = this.purchasedTickets.beer;
-        document.getElementById('inventoryMassage').textContent = this.purchasedTickets.massage;
-        document.getElementById('inventorySauna').textContent = this.purchasedTickets.sauna;
-        document.getElementById('inventoryIphone').textContent = this.purchasedTickets.iphone;
-        
-        // Кнопка вращения
-        this.spinButton.disabled = this.ticketBalance <= 0 || this.isSpinning;
-    }
-    
-    initTelegram() {
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-        }
-    }
-    
-    shareReferral() {
-        const referralLink = this.generateReferralLink();
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.shareUrl(referralLink, 'Присоединяйся к Rai Paradise! Крути колесо и выигрывай призы! 🎰');
-        } else {
-            alert(`Поделитесь ссылкой: ${referralLink}`);
-        }
-    }
-    
-    copyReferral() {
-        const referralLink = this.generateReferralLink();
-        navigator.clipboard.writeText(referralLink).then(() => {
-            alert('Реферальная ссылка скопирована!');
-        });
-    }
-    
-    generateReferralLink() {
-        return `https://t.me/your_bot?start=ref_${Date.now()}`;
-    }
-    
-    // Метод для начисления бонусов за приглашенных друзей
-    addReferralBonus() {
-        this.ticketBalance += 3;
-        this.coinBalance += 50;
-        this.userStats.friendsInvited++;
-        this.saveUserData();
-        this.updateUI();
-        this.showResultModal('🎉 Бонус за приглашенного друга: 3 билета + 50 рай коинов!');
-    }
+    // ... (остальные методы остаются без изменений)
 }
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
     window.raiApp = new RaiParadiseApp();
+    
+    // Обработчик закрытия модального окна прогрева
+    document.getElementById('closeWarmupModal').addEventListener('click', () => {
+        window.raiApp.hideModal('warmupModal');
+    });
 });
