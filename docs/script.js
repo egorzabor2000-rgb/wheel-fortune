@@ -1,12 +1,16 @@
 class WheelOfFortune {
     constructor() {
-        this.canvas = document.getElementById('wheel');
+        this.canvas = document.getElementById('wheelCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.spinBtn = document.getElementById('spin-btn');
-        this.ticketCount = document.getElementById('ticket-count');
-        this.modal = document.getElementById('result-modal');
-        this.prizeText = document.getElementById('prize-text');
+        this.spinButton = document.getElementById('spinButton');
+        this.ticketCounter = document.getElementById('ticketCounter');
+        this.modal = document.getElementById('resultModal');
+        this.prizeText = document.getElementById('prizeText');
+        this.shareButton = document.getElementById('shareButton');
+        this.copyButton = document.getElementById('copyButton');
+        this.closeModal = document.getElementById('closeModal');
         
+        // Настройки призов
         this.prizes = [
             { name: "10-50 рай коинов", probability: 60, color: "#FF6B6B", type: "coins" },
             { name: "Поцелуй от Рай райского", probability: 20, color: "#4ECDC4", type: "kiss" },
@@ -18,7 +22,6 @@ class WheelOfFortune {
         this.isSpinning = false;
         this.rotation = 0;
         this.tickets = this.getTickets();
-        this.updateTicketDisplay();
         
         this.init();
     }
@@ -26,6 +29,7 @@ class WheelOfFortune {
     init() {
         this.drawWheel();
         this.setupEventListeners();
+        this.updateTicketDisplay();
         this.initTelegram();
     }
     
@@ -37,7 +41,8 @@ class WheelOfFortune {
     }
     
     getTickets() {
-        return parseInt(localStorage.getItem('spinTickets')) || 0;
+        const saved = localStorage.getItem('spinTickets');
+        return saved ? parseInt(saved) : 3; // Начальные 3 билета для тестирования
     }
     
     saveTickets(tickets) {
@@ -46,8 +51,8 @@ class WheelOfFortune {
     }
     
     updateTicketDisplay() {
-        this.ticketCount.textContent = this.tickets;
-        this.spinBtn.disabled = this.tickets <= 0 || this.isSpinning;
+        this.ticketCounter.textContent = this.tickets;
+        this.spinButton.disabled = this.tickets <= 0 || this.isSpinning;
     }
     
     drawWheel() {
@@ -55,47 +60,57 @@ class WheelOfFortune {
         const centerY = this.canvas.height / 2;
         const radius = this.canvas.width / 2 - 10;
         
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
         let startAngle = 0;
+        const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
         
         this.prizes.forEach((prize, index) => {
-            const sliceAngle = (2 * Math.PI * prize.probability) / 100;
+            const sliceAngle = (2 * Math.PI * prize.probability) / totalProbability;
             const endAngle = startAngle + sliceAngle;
             
-            // Draw slice
+            // Рисуем сегмент колеса
             this.ctx.beginPath();
             this.ctx.moveTo(centerX, centerY);
             this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
             this.ctx.closePath();
             this.ctx.fillStyle = prize.color;
             this.ctx.fill();
+            this.ctx.stroke();
             
-            // Draw text
+            // Рисуем текст
             this.ctx.save();
             this.ctx.translate(centerX, centerY);
             this.ctx.rotate(startAngle + sliceAngle / 2);
             this.ctx.textAlign = 'right';
             this.ctx.fillStyle = 'white';
-            this.ctx.font = '12px Arial';
-            this.ctx.fillText(prize.name.substring(0, 10) + '...', radius - 20, 0);
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.fillText(prize.name, radius - 15, 0);
             this.ctx.restore();
             
             startAngle = endAngle;
         });
+        
+        // Центральный круг
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+        this.ctx.fillStyle = 'white';
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#ddd';
+        this.ctx.stroke();
     }
     
     setupEventListeners() {
-        this.spinBtn.addEventListener('click', () => this.spin());
+        this.spinButton.addEventListener('click', () => this.spin());
+        this.closeModal.addEventListener('click', () => this.hideModal());
+        this.shareButton.addEventListener('click', () => this.shareReferral());
+        this.copyButton.addEventListener('click', () => this.copyReferral());
         
-        document.getElementById('close-modal').addEventListener('click', () => {
-            this.modal.classList.add('hidden');
-        });
-        
-        document.getElementById('share-btn').addEventListener('click', () => {
-            this.shareReferral();
-        });
-        
-        document.getElementById('copy-btn').addEventListener('click', () => {
-            this.copyReferral();
+        // Закрытие модального окна при клике вне его
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.hideModal();
+            }
         });
     }
     
@@ -103,13 +118,13 @@ class WheelOfFortune {
         if (this.isSpinning || this.tickets <= 0) return;
         
         this.isSpinning = true;
-        this.spinBtn.disabled = true;
+        this.spinButton.disabled = true;
         
-        // Use ticket
+        // Используем билет
         this.saveTickets(this.tickets - 1);
         this.updateTicketDisplay();
         
-        // Generate random prize based on probability
+        // Выбираем случайный приз на основе вероятностей
         const random = Math.random() * 100;
         let accumulatedProb = 0;
         let winningPrize = null;
@@ -122,36 +137,43 @@ class WheelOfFortune {
             }
         }
         
-        // Calculate rotation for animation
-        const extraRotation = 5 * 360; // 5 full extra rotations
-        const prizeIndex = this.prizes.indexOf(winningPrize);
-        const sliceAngle = (2 * Math.PI) / this.prizes.length;
-        const targetAngle = prizeIndex * sliceAngle + Math.random() * sliceAngle;
-        
-        const targetRotation = extraRotation + (360 - (targetAngle * 180 / Math.PI) % 360);
-        
-        // Animate spin
-        this.animateSpin(targetRotation, winningPrize);
+        // Анимация вращения
+        this.animateSpin(winningPrize);
     }
     
-    animateSpin(targetRotation, prize) {
-        const duration = 3000;
-        const startRotation = this.rotation;
+    animateSpin(winningPrize) {
+        const spinDuration = 3000; // 3 секунды
         const startTime = performance.now();
+        const startRotation = this.rotation;
+        
+        // Дополнительные вращения + позиция выигрышного приза
+        const extraRotations = 5; // 5 полных оборотов
+        const winningIndex = this.prizes.indexOf(winningPrize);
+        const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
+        
+        // Вычисляем угол для выигрышного приза
+        let prizeStartAngle = 0;
+        for (let i = 0; i < winningIndex; i++) {
+            prizeStartAngle += (2 * Math.PI * this.prizes[i].probability) / totalProbability;
+        }
+        const prizeAngle = prizeStartAngle + (Math.PI * this.prizes[winningIndex].probability) / totalProbability;
+        
+        const targetRotation = extraRotations * 2 * Math.PI + (2 * Math.PI - prizeAngle);
         
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
+            const progress = Math.min(elapsed / spinDuration, 1);
             
-            // Easing function
+            // Эффект замедления (easing)
             const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+            const easedProgress = easeOut(progress);
             
-            this.rotation = startRotation + (targetRotation - startRotation) * easeOut(progress);
+            this.rotation = startRotation + (targetRotation - startRotation) * easedProgress;
             
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            // Перерисовываем колесо с новым вращением
             this.ctx.save();
             this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
-            this.ctx.rotate(this.rotation * Math.PI / 180);
+            this.ctx.rotate(this.rotation);
             this.ctx.translate(-this.canvas.width / 2, -this.canvas.height / 2);
             this.drawWheel();
             this.ctx.restore();
@@ -161,7 +183,7 @@ class WheelOfFortune {
             } else {
                 this.isSpinning = false;
                 this.updateTicketDisplay();
-                this.showPrize(prize);
+                setTimeout(() => this.showPrize(winningPrize), 500);
             }
         };
         
@@ -170,6 +192,7 @@ class WheelOfFortune {
     
     showPrize(prize) {
         let prizeMessage = '';
+        let additionalAction = null;
         
         switch(prize.type) {
             case 'coins':
@@ -194,7 +217,15 @@ class WheelOfFortune {
         }
         
         this.prizeText.textContent = prizeMessage;
-        this.modal.classList.remove('hidden');
+        this.showModal();
+    }
+    
+    showModal() {
+        this.modal.style.display = 'flex';
+    }
+    
+    hideModal() {
+        this.modal.style.display = 'none';
     }
     
     addCoins(amount) {
@@ -205,10 +236,18 @@ class WheelOfFortune {
     shareReferral() {
         const referralLink = this.generateReferralLink();
         if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.shareUrl(referralLink, 'Присоединяйся к колесу фортуны!');
+            Telegram.WebApp.shareUrl(referralLink, 'Присоединяйся к колесу фортуны! Крути и выигрывай призы! 🎰');
         } else {
-            // Fallback for browser testing
-            alert(`Поделитесь этой ссылкой: ${referralLink}`);
+            // Fallback для браузера
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Колесо Фортуны',
+                    text: 'Присоединяйся к колесу фортуны!',
+                    url: referralLink,
+                });
+            } else {
+                alert(`Поделитесь этой ссылкой: ${referralLink}`);
+            }
         }
     }
     
@@ -216,20 +255,26 @@ class WheelOfFortune {
         const referralLink = this.generateReferralLink();
         navigator.clipboard.writeText(referralLink).then(() => {
             alert('Ссылка скопирована в буфер обмена!');
+        }).catch(() => {
+            // Fallback для старых браузеров
+            const textArea = document.createElement('textarea');
+            textArea.value = referralLink;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Ссылка скопирована!');
         });
     }
     
     generateReferralLink() {
-        // In a real app, this would be a proper referral system
+        // В реальном приложении это была бы правильная реферальная система
         const userId = localStorage.getItem('tgUserId') || 'demo_user';
         return `https://t.me/your_bot?start=ref_${userId}`;
     }
 }
 
-// Initialize the app when DOM is loaded
+// Инициализация приложения когда DOM загружен
 document.addEventListener('DOMContentLoaded', () => {
     new WheelOfFortune();
 });
-
-// Add some demo tickets for testing
-localStorage.setItem('spinTickets', '3');
