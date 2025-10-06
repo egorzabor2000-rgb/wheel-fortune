@@ -5,24 +5,27 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    color: #333;
     min-height: 100vh;
     padding: 20px;
+    line-height: 1.6;
 }
 
 .container {
     max-width: 400px;
     margin: 0 auto;
+}
+
+/* Заголовок */
+.header {
     text-align: center;
+    margin-bottom: 25px;
+    color: white;
 }
 
-header {
-    margin-bottom: 30px;
-}
-
-h1 {
+.header h1 {
     font-size: 28px;
     margin-bottom: 8px;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -33,197 +36,281 @@ h1 {
     opacity: 0.9;
 }
 
+/* Секция с колесом */
+.wheel-section {
+    margin-bottom: 25px;
+}
+
 .wheel-container {
     position: relative;
     width: 300px;
     height: 300px;
-    margin: 0 auto 30px;
+    margin: 0 auto;
 }
 
-#wheel {
+#wheelCanvas {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.wheel-center {
+.wheel-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 30px;
+    background: #ff6b6b;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.spin-button {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.spin-btn {
-    background: #ff6b6b;
+    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
     color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: 25px;
+    padding: 15px 25px;
+    border-radius: 50px;
     font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+    box-shadow: 0 6px 20px rgba(255,107,107,0.4);
     transition: all 0.3s ease;
+    z-index: 5;
 }
 
-.spin-btn:disabled {
-    background: #ccc;
+.spin-button:hover:not(:disabled) {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 8px 25px rgba(255,107,107,0.6);
+}
+
+.spin-button:disabled {
+    background: #cccccc;
     cursor: not-allowed;
     box-shadow: none;
 }
 
-.spin-btn:not(:disabled):hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(255,107,107,0.6);
-}
-
-.pointer {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 20px;
-    background: #ff6b6b;
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-}
-
-.ticket-counter {
-    background: rgba(255,255,255,0.1);
+/* Счетчик билетов */
+.tickets-section {
+    background: rgba(255,255,255,0.95);
     padding: 20px;
-    border-radius: 15px;
+    border-radius: 20px;
     margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.counter {
-    font-size: 48px;
-    font-weight: bold;
-    color: #ffd700;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.prizes-section {
-    background: rgba(255,255,255,0.1);
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-    text-align: left;
-}
-
-.prizes-section h3 {
-    margin-bottom: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     text-align: center;
 }
 
+.ticket-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ticket-counter {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ff6b6b;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Список призов */
+.prizes-section {
+    background: rgba(255,255,255,0.95);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.prizes-section h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 20px;
+}
+
 .prizes-list {
-    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.prizes-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
+.prize-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
 }
 
+.probability {
+    background: #667eea;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Реферальная секция */
 .referral-section {
-    background: rgba(255,255,255,0.1);
-    padding: 20px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.95);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
-.referral-section h3 {
+.referral-info h3 {
     margin-bottom: 10px;
-    font-size: 16px;
+    color: #333;
+}
+
+.referral-info p {
+    margin-bottom: 8px;
+    color: #666;
 }
 
 .motivation {
     font-style: italic;
-    margin-bottom: 20px;
-    opacity: 0.9;
+    color: #ff6b6b !important;
+    font-weight: bold;
 }
 
 .referral-buttons {
     display: flex;
-    gap: 10px;
-    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
 }
 
 .btn-share, .btn-copy {
-    padding: 12px 24px;
+    flex: 1;
+    padding: 15px;
     border: none;
-    border-radius: 25px;
+    border-radius: 12px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-size: 14px;
 }
 
 .btn-share {
-    background: #4ecdc4;
+    background: linear-gradient(45deg, #4ecdc4, #67d8d1);
     color: white;
 }
 
 .btn-copy {
-    background: #45b7d1;
+    background: linear-gradient(45deg, #45b7d1, #5fc7e0);
     color: white;
 }
 
 .btn-share:hover, .btn-copy:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
 }
 
+/* Модальное окно */
 .modal {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.8);
-    display: flex;
+    z-index: 1000;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    padding: 20px;
 }
 
 .modal-content {
     background: white;
-    color: #333;
-    padding: 30px;
     border-radius: 20px;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+    color: white;
+    padding: 25px;
+    border-radius: 20px 20px 0 0;
     text-align: center;
-    max-width: 300px;
-    width: 90%;
 }
 
-.modal h2 {
-    color: #667eea;
-    margin-bottom: 15px;
+.modal-header h2 {
+    margin: 0;
+    font-size: 24px;
 }
 
-#prize-text {
+.modal-body {
+    padding: 30px 25px;
+    text-align: center;
     font-size: 18px;
-    margin-bottom: 20px;
     font-weight: bold;
+    color: #333;
 }
 
-#close-modal {
+.modal-footer {
+    padding: 0 25px 25px;
+    text-align: center;
+}
+
+.btn-ok {
     background: #667eea;
     color: white;
     border: none;
-    padding: 12px 30px;
+    padding: 12px 40px;
     border-radius: 25px;
-    cursor: pointer;
     font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.hidden {
-    display: none !important;
+.btn-ok:hover {
+    background: #5a6fd8;
+    transform: scale(1.05);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .wheel-container {
+        width: 280px;
+        height: 280px;
+    }
+    
+    .ticket-counter {
+        font-size: 32px;
+    }
+    
+    .referral-buttons {
+        flex-direction: column;
+    }
 }
