@@ -1,16 +1,58 @@
-class WheelOfFortune {
+class RaiParadiseApp {
     constructor() {
+        this.currentTab = 'wheel';
+        this.coinBalance = 0;
+        this.ticketBalance = 3;
+        this.purchasedTickets = {
+            beer: 0,
+            massage: 0,
+            sauna: 0,
+            iphone: 0
+        };
+        this.userStats = {
+            totalSpins: 0,
+            totalCoinsWon: 0,
+            friendsInvited: 0
+        };
+        
+        this.init();
+    }
+    
+    init() {
+        this.loadUserData();
+        this.initWheel();
+        this.setupEventListeners();
+        this.initTelegram();
+        this.updateUI();
+    }
+    
+    loadUserData() {
+        // Загрузка данных из localStorage
+        const savedCoins = localStorage.getItem('raiCoins');
+        const savedTickets = localStorage.getItem('spinTickets');
+        const savedPurchased = localStorage.getItem('purchasedTickets');
+        const savedStats = localStorage.getItem('userStats');
+        
+        if (savedCoins) this.coinBalance = parseInt(savedCoins);
+        if (savedTickets) this.ticketBalance = parseInt(savedTickets);
+        if (savedPurchased) this.purchasedTickets = JSON.parse(savedPurchased);
+        if (savedStats) this.userStats = JSON.parse(savedStats);
+    }
+    
+    saveUserData() {
+        localStorage.setItem('raiCoins', this.coinBalance.toString());
+        localStorage.setItem('spinTickets', this.ticketBalance.toString());
+        localStorage.setItem('purchasedTickets', JSON.stringify(this.purchasedTickets));
+        localStorage.setItem('userStats', JSON.stringify(this.userStats));
+    }
+    
+    initWheel() {
         this.canvas = document.getElementById('wheelCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.spinButton = document.getElementById('spinButton');
-        this.ticketCounter = document.getElementById('ticketCounter');
-        this.modal = document.getElementById('resultModal');
-        this.prizeText = document.getElementById('prizeText');
-        this.shareButton = document.getElementById('shareButton');
-        this.copyButton = document.getElementById('copyButton');
-        this.closeModal = document.getElementById('closeModal');
+        this.isSpinning = false;
+        this.rotation = 0;
         
-        // Настройки призов
         this.prizes = [
             { name: "10-50 рай коинов", probability: 60, color: "#FF6B6B", type: "coins" },
             { name: "Поцелуй от Рай райского", probability: 20, color: "#4ECDC4", type: "kiss" },
@@ -19,40 +61,7 @@ class WheelOfFortune {
             { name: "Поездка на Пхукет", probability: 5, color: "#9B5DE5", type: "trip" }
         ];
         
-        this.isSpinning = false;
-        this.rotation = 0;
-        this.tickets = this.getTickets();
-        
-        this.init();
-    }
-    
-    init() {
         this.drawWheel();
-        this.setupEventListeners();
-        this.updateTicketDisplay();
-        this.initTelegram();
-    }
-    
-    initTelegram() {
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-        }
-    }
-    
-    getTickets() {
-        const saved = localStorage.getItem('spinTickets');
-        return saved ? parseInt(saved) : 3; // Начальные 3 билета для тестирования
-    }
-    
-    saveTickets(tickets) {
-        this.tickets = tickets;
-        localStorage.setItem('spinTickets', tickets.toString());
-    }
-    
-    updateTicketDisplay() {
-        this.ticketCounter.textContent = this.tickets;
-        this.spinButton.disabled = this.tickets <= 0 || this.isSpinning;
     }
     
     drawWheel() {
@@ -69,7 +78,7 @@ class WheelOfFortune {
             const sliceAngle = (2 * Math.PI * prize.probability) / totalProbability;
             const endAngle = startAngle + sliceAngle;
             
-            // Рисуем сегмент колеса
+            // Рисуем сегмент
             this.ctx.beginPath();
             this.ctx.moveTo(centerX, centerY);
             this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
@@ -78,14 +87,14 @@ class WheelOfFortune {
             this.ctx.fill();
             this.ctx.stroke();
             
-            // Рисуем текст
+            // Текст
             this.ctx.save();
             this.ctx.translate(centerX, centerY);
             this.ctx.rotate(startAngle + sliceAngle / 2);
             this.ctx.textAlign = 'right';
             this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 12px Arial';
-            this.ctx.fillText(prize.name, radius - 15, 0);
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.fillText(prize.name.substring(0, 8) + '...', radius - 15, 0);
             this.ctx.restore();
             
             startAngle = endAngle;
@@ -101,30 +110,70 @@ class WheelOfFortune {
     }
     
     setupEventListeners() {
-        this.spinButton.addEventListener('click', () => this.spin());
-        this.closeModal.addEventListener('click', () => this.hideModal());
-        this.shareButton.addEventListener('click', () => this.shareReferral());
-        this.copyButton.addEventListener('click', () => this.copyReferral());
+        // Вкладки
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
         
-        // Закрытие модального окна при клике вне его
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.hideModal();
-            }
+        // Колесо
+        this.spinButton.addEventListener('click', () => this.spinWheel());
+        
+        // Покупка билетов
+        document.querySelectorAll('.buy-ticket-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const event = e.target.dataset.event;
+                const cost = parseInt(e.target.dataset.cost);
+                this.showPurchaseModal(event, cost);
+            });
+        });
+        
+        // Модальные окна
+        document.getElementById('closeModal').addEventListener('click', () => this.hideModal('resultModal'));
+        document.getElementById('confirmPurchase').addEventListener('click', () => this.confirmPurchase());
+        document.getElementById('cancelPurchase').addEventListener('click', () => this.hideModal('purchaseModal'));
+        
+        // Реферальная система
+        document.getElementById('shareButton').addEventListener('click', () => this.shareReferral());
+        document.getElementById('copyButton').addEventListener('click', () => this.copyReferral());
+        
+        // Закрытие модалок по клику вне
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideModal(modal.id);
+                }
+            });
         });
     }
     
-    spin() {
-        if (this.isSpinning || this.tickets <= 0) return;
+    switchTab(tabName) {
+        this.currentTab = tabName;
+        
+        // Обновляем активные кнопки
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.toggle('active', button.dataset.tab === tabName);
+        });
+        
+        // Показываем активную вкладку
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `${tabName}-tab`);
+        });
+    }
+    
+    spinWheel() {
+        if (this.isSpinning || this.ticketBalance <= 0) return;
         
         this.isSpinning = true;
         this.spinButton.disabled = true;
         
         // Используем билет
-        this.saveTickets(this.tickets - 1);
-        this.updateTicketDisplay();
+        this.ticketBalance--;
+        this.userStats.totalSpins++;
+        this.updateUI();
         
-        // Выбираем случайный приз на основе вероятностей
+        // Выбираем приз
         const random = Math.random() * 100;
         let accumulatedProb = 0;
         let winningPrize = null;
@@ -137,21 +186,18 @@ class WheelOfFortune {
             }
         }
         
-        // Анимация вращения
         this.animateSpin(winningPrize);
     }
     
     animateSpin(winningPrize) {
-        const spinDuration = 3000; // 3 секунды
+        const spinDuration = 3000;
         const startTime = performance.now();
         const startRotation = this.rotation;
         
-        // Дополнительные вращения + позиция выигрышного приза
-        const extraRotations = 5; // 5 полных оборотов
+        const extraRotations = 5;
         const winningIndex = this.prizes.indexOf(winningPrize);
         const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
         
-        // Вычисляем угол для выигрышного приза
         let prizeStartAngle = 0;
         for (let i = 0; i < winningIndex; i++) {
             prizeStartAngle += (2 * Math.PI * this.prizes[i].probability) / totalProbability;
@@ -164,13 +210,11 @@ class WheelOfFortune {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / spinDuration, 1);
             
-            // Эффект замедления (easing)
             const easeOut = (t) => 1 - Math.pow(1 - t, 3);
             const easedProgress = easeOut(progress);
             
             this.rotation = startRotation + (targetRotation - startRotation) * easedProgress;
             
-            // Перерисовываем колесо с новым вращением
             this.ctx.save();
             this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
             this.ctx.rotate(this.rotation);
@@ -182,99 +226,154 @@ class WheelOfFortune {
                 requestAnimationFrame(animate);
             } else {
                 this.isSpinning = false;
-                this.updateTicketDisplay();
-                setTimeout(() => this.showPrize(winningPrize), 500);
+                this.processPrize(winningPrize);
+                this.updateUI();
             }
         };
         
         requestAnimationFrame(animate);
     }
     
-    showPrize(prize) {
-        let prizeMessage = '';
-        let additionalAction = null;
+    processPrize(prize) {
+        let message = '';
         
         switch(prize.type) {
             case 'coins':
-                const coins = Math.floor(Math.random() * 41) + 10; // 10-50 coins
-                prizeMessage = `🎉 Вы выиграли ${coins} рай коинов!`;
-                this.addCoins(coins);
+                const coins = Math.floor(Math.random() * 41) + 10;
+                this.coinBalance += coins;
+                this.userStats.totalCoinsWon += coins;
+                message = `🎉 Вы выиграли ${coins} рай коинов!`;
                 break;
             case 'ticket':
-                prizeMessage = '🎫 Вы выиграли дополнительный спин-билет!';
-                this.saveTickets(this.tickets + 1);
-                this.updateTicketDisplay();
+                this.ticketBalance++;
+                message = '🎫 Вы выиграли дополнительный спин-билет!';
                 break;
             case 'kiss':
-                prizeMessage = '💋 Вы выиграли поцелуй от Рай райского!';
+                message = '💋 Вы выиграли поцелуй от Рай райского!';
                 break;
             case 'beer':
-                prizeMessage = '🍺 Вы выиграли бутыль пива!';
+                message = '🍺 Вы выиграли бутыль пива!';
                 break;
             case 'trip':
-                prizeMessage = '✈️ Вы выиграли поездку на Пхукет!';
+                message = '✈️ Вы выиграли поездку на Пхукет!';
                 break;
         }
         
-        this.prizeText.textContent = prizeMessage;
-        this.showModal();
+        this.saveUserData();
+        this.showResultModal(message);
     }
     
-    showModal() {
-        this.modal.style.display = 'flex';
+    showPurchaseModal(event, cost) {
+        this.currentPurchase = { event, cost };
+        
+        const eventNames = {
+            beer: 'розыгрыш пива',
+            massage: 'розыгрыш массажа', 
+            sauna: 'розыгрыш парения',
+            iphone: 'розыгрыш iPhone 17 Pro'
+        };
+        
+        document.getElementById('purchaseText').textContent = 
+            `Вы хотите купить билет на ${eventNames[event]} за ${cost.toLocaleString()} рай коинов?`;
+        
+        this.showModal('purchaseModal');
     }
     
-    hideModal() {
-        this.modal.style.display = 'none';
+    confirmPurchase() {
+        const { event, cost } = this.currentPurchase;
+        
+        if (this.coinBalance >= cost) {
+            this.coinBalance -= cost;
+            this.purchasedTickets[event]++;
+            this.saveUserData();
+            this.updateUI();
+            
+            this.hideModal('purchaseModal');
+            this.showResultModal(`🎫 Вы успешно купили билет на розыгрыш!`);
+        } else {
+            this.hideModal('purchaseModal');
+            this.showResultModal('❌ Недостаточно рай коинов для покупки билета');
+        }
     }
     
-    addCoins(amount) {
-        const currentCoins = parseInt(localStorage.getItem('raiCoins')) || 0;
-        localStorage.setItem('raiCoins', (currentCoins + amount).toString());
+    showResultModal(message) {
+        document.getElementById('prizeText').textContent = message;
+        this.showModal('resultModal');
+    }
+    
+    showModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+    }
+    
+    hideModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
+    updateUI() {
+        // Баланс
+        document.getElementById('ticketCount').textContent = this.ticketBalance;
+        document.getElementById('coinBalance').textContent = this.coinBalance.toLocaleString();
+        
+        // Статистика
+        document.getElementById('totalSpins').textContent = this.userStats.totalSpins;
+        document.getElementById('totalCoinsWon').textContent = this.userStats.totalCoinsWon.toLocaleString();
+        document.getElementById('friendsInvited').textContent = this.userStats.friendsInvited;
+        
+        // Купленные билеты
+        document.getElementById('beerTickets').textContent = this.purchasedTickets.beer;
+        document.getElementById('massageTickets').textContent = this.purchasedTickets.massage;
+        document.getElementById('saunaTickets').textContent = this.purchasedTickets.sauna;
+        document.getElementById('iphoneTickets').textContent = this.purchasedTickets.iphone;
+        
+        // Инвентарь
+        document.getElementById('inventoryBeer').textContent = this.purchasedTickets.beer;
+        document.getElementById('inventoryMassage').textContent = this.purchasedTickets.massage;
+        document.getElementById('inventorySauna').textContent = this.purchasedTickets.sauna;
+        document.getElementById('inventoryIphone').textContent = this.purchasedTickets.iphone;
+        
+        // Кнопка вращения
+        this.spinButton.disabled = this.ticketBalance <= 0 || this.isSpinning;
+    }
+    
+    initTelegram() {
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        }
     }
     
     shareReferral() {
         const referralLink = this.generateReferralLink();
         if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.shareUrl(referralLink, 'Присоединяйся к колесу фортуны! Крути и выигрывай призы! 🎰');
+            Telegram.WebApp.shareUrl(referralLink, 'Присоединяйся к Rai Paradise! Крути колесо и выигрывай призы! 🎰');
         } else {
-            // Fallback для браузера
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Колесо Фортуны',
-                    text: 'Присоединяйся к колесу фортуны!',
-                    url: referralLink,
-                });
-            } else {
-                alert(`Поделитесь этой ссылкой: ${referralLink}`);
-            }
+            alert(`Поделитесь ссылкой: ${referralLink}`);
         }
     }
     
     copyReferral() {
         const referralLink = this.generateReferralLink();
         navigator.clipboard.writeText(referralLink).then(() => {
-            alert('Ссылка скопирована в буфер обмена!');
-        }).catch(() => {
-            // Fallback для старых браузеров
-            const textArea = document.createElement('textarea');
-            textArea.value = referralLink;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('Ссылка скопирована!');
+            alert('Реферальная ссылка скопирована!');
         });
     }
     
     generateReferralLink() {
-        // В реальном приложении это была бы правильная реферальная система
-        const userId = localStorage.getItem('tgUserId') || 'demo_user';
-        return `https://t.me/your_bot?start=ref_${userId}`;
+        return `https://t.me/your_bot?start=ref_${Date.now()}`;
+    }
+    
+    // Метод для начисления бонусов за приглашенных друзей
+    addReferralBonus() {
+        this.ticketBalance += 3;
+        this.coinBalance += 50;
+        this.userStats.friendsInvited++;
+        this.saveUserData();
+        this.updateUI();
+        this.showResultModal('🎉 Бонус за приглашенного друга: 3 билета + 50 рай коинов!');
     }
 }
 
-// Инициализация приложения когда DOM загружен
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-    new WheelOfFortune();
+    window.raiApp = new RaiParadiseApp();
 });
