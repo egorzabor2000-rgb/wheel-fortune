@@ -3,71 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Крути и выигрывай</title>
+    <title>Rai Paradise - Колесо Фортуны</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <!-- Заголовок -->
-        <header class="header">
-            <h1>🎰 Крути и выигрывай</h1>
-            <p class="subtitle">От полезных файлов до 50 000 ₽</p>
-        </header>
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="wheel">🎰 Колесо</button>
+            <button class="tab-button" data-tab="events">📅 Розыгрыши</button>
+            <button class="tab-button" data-tab="profile">👤 Профиль</button>
+        </div>
 
-        <!-- Основное колесо -->
-        <div class="wheel-section">
-            <div class="wheel-container">
-                <canvas id="wheelCanvas" width="300" height="300"></canvas>
-                <div class="wheel-pointer"></div>
-                <button id="spinButton" class="spin-button">Крутить колесо</button>
+        <!-- БАЛАНС -->
+        <div class="balance-section">
+            <div class="balance-card">
+                <div class="balance-item">
+                    <span class="balance-label">🎫 Spin-билеты</span>
+                    <span class="balance-value" id="ticketCount">3</span>
+                </div>
+                <div class="balance-item">
+                    <span class="balance-label">🪙 Рай коины</span>
+                    <span class="balance-value" id="coinBalance">0</span>
+                </div>
             </div>
         </div>
 
-        <!-- Счетчик билетов -->
-        <div class="tickets-section">
-            <div class="ticket-info">
-                <span>1 spin-билет = 1 прокрутка</span>
-                <div class="ticket-counter" id="ticketCounter">3</div>
+        <!-- ВКЛАДКА КОЛЕСА -->
+        <div id="wheel-tab" class="tab-content active">
+            <div class="wheel-section">
+                <div class="wheel-container">
+                    <canvas id="wheelCanvas" width="300" height="300"></canvas>
+                    <div class="wheel-pointer"></div>
+                    <button id="spinButton" class="spin-button">Крутить колесо</button>
+                </div>
             </div>
-        </div>
 
-        <!-- Список призов -->
-        <div class="prizes-section">
-            <h3>🎁 Список призов</h3>
-            <div class="prizes-list">
-                <div class="prize-item">🪙 10-50 рай коинов <span class="probability">60%</span></div>
-                <div class="prize-item">💋 Поцелуй от Рай райского <span class="probability">20%</span></div>
-                <div class="prize-item">🎫 Новый спин билет <span class="probability">10%</span></div>
-                <div class="prize-item">🍺 Бутыль пива <span class="probability">5%</span></div>
-                <div class="prize-item">✈️ Поездка на Пхукет <span class="probability">5%</span></div>
-            </div>
-        </div>
-
-        <!-- Реферальная программа -->
-        <div class="referral-section">
-            <div class="referral-info">
+            <div class="referral-section">
                 <h3>👥 Пригласи друзей</h3>
-                <p>Получи <strong>3 spin-билета</strong> за каждого приглашенного друга</p>
-                <p class="motivation">С каждым прокрутом ты все ближе к iPhone 17 Air</p>
-            </div>
-            <div class="referral-buttons">
-                <button id="shareButton" class="btn-share">📤 ОТПРАВИТЬ</button>
-                <button id="copyButton" class="btn-copy">📋 СКОПИРОВАТЬ</button>
+                <p>Получи <strong>3 spin-билета + 50 рай коинов</strong> за каждого друга</p>
+                <div class="referral-buttons">
+                    <button id="shareButton" class="btn-share">📤 ОТПРАВИТЬ</button>
+                    <button id="copyButton" class="btn-copy">📋 СКОПИРОВАТЬ</button>
+                </div>
             </div>
         </div>
 
-        <!-- Модальное окно результата -->
+        <!-- ВКЛАДКА РОЗЫГРЫШЕЙ -->
+        <div id="events-tab" class="tab-content">
+            <div class="events-header">
+                <h2>🎁 Ближайшие розыгрыши</h2>
+                <p class="event-date">Следующий ивент: <strong>20 ноября</strong></p>
+            </div>
+
+            <div class="events-list">
+                <!-- Розыгрыш 1 -->
+                <div class="event-card">
+                    <div class="event-prize">🍺 Ящик пива</div>
+                    <div class="event-cost">100 рай коинов</div>
+                    <div class="event-info">
+                        <span>🎫 Билет на розыгрыш</span>
+                        <span>📅 20 ноября</span>
+                    </div>
+                    <button class="buy-ticket-btn" data-event="beer" data-cost="100">
+                        Купить билет
+                    </button>
+                    <div class="ticket-count">Куплено: <span id="beerTickets">0</span></div>
+                </div>
+
+                <!-- Розыгрыш 2 -->
+                <div class="event-card">
+                    <div class="event-prize">💆‍♂️ Массаж</div>
+                    <div class="event-cost">300 рай коинов</div>
+                    <div class="event-info">
+                        <span>🎫 Билет на розыгрыш</span>
+                        <span>📅 20 ноября</span>
+                    </div>
+                    <button class="buy-ticket-btn" data-event="massage" data-cost="300">
+                        Купить билет
+                    </button>
+                    <div class="ticket-count">Куплено: <span id="massageTickets">0</span></div>
+                </div>
+
+                <!-- Розыгрыш 3 -->
+                <div class="event-card">
+                    <div class="event-prize">🧖‍♂️ Парение</div>
+                    <div class="event-cost">1,000 рай коинов</div>
+                    <div class="event-info">
+                        <span>🎫 Билет на розыгрыш</span>
+                        <span>📅 20 ноября</span>
+                    </div>
+                    <button class="buy-ticket-btn" data-event="sauna" data-cost="1000">
+                        Купить билет
+                    </button>
+                    <div class="ticket-count">Куплено: <span id="saunaTickets">0</span></div>
+                </div>
+
+                <!-- Розыгрыш 4 -->
+                <div class="event-card premium">
+                    <div class="event-prize">📱 iPhone 17 Pro</div>
+                    <div class="event-cost">10,000,000 рай коинов</div>
+                    <div class="event-info">
+                        <span>🎫 Билет на розыгрыш</span>
+                        <span>📅 20 ноября</span>
+                    </div>
+                    <button class="buy-ticket-btn" data-event="iphone" data-cost="10000000">
+                        Купить билет
+                    </button>
+                    <div class="ticket-count">Куплено: <span id="iphoneTickets">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА ПРОФИЛЯ -->
+        <div id="profile-tab" class="tab-content">
+            <div class="profile-section">
+                <h3>📊 Ваша статистика</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Всего вращений</span>
+                        <span class="stat-value" id="totalSpins">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Выиграно коинов</span>
+                        <span class="stat-value" id="totalCoinsWon">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Приглашено друзей</span>
+                        <span class="stat-value" id="friendsInvited">0</span>
+                    </div>
+                </div>
+
+                <div class="inventory-section">
+                    <h4>🎫 Ваши билеты на розыгрыши</h4>
+                    <div class="inventory-list">
+                        <div class="inventory-item">
+                            <span>🍺 Розыгрыш пива</span>
+                            <span class="inventory-count" id="inventoryBeer">0</span>
+                        </div>
+                        <div class="inventory-item">
+                            <span>💆‍♂️ Розыгрыш массажа</span>
+                            <span class="inventory-count" id="inventoryMassage">0</span>
+                        </div>
+                        <div class="inventory-item">
+                            <span>🧖‍♂️ Розыгрыш парения</span>
+                            <span class="inventory-count" id="inventorySauna">0</span>
+                        </div>
+                        <div class="inventory-item">
+                            <span>📱 Розыгрыш iPhone</span>
+                            <span class="inventory-count" id="inventoryIphone">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНЫЕ ОКНА -->
         <div id="resultModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>🎉 Поздравляем!</h2>
                 </div>
                 <div class="modal-body">
-                    <p id="prizeText">Вы выиграли приз!</p>
+                    <p id="prizeText"></p>
                 </div>
                 <div class="modal-footer">
                     <button id="closeModal" class="btn-ok">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="purchaseModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🎫 Покупка билета</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="purchaseText"></p>
+                </div>
+                <div class="modal-footer">
+                    <button id="confirmPurchase" class="btn-ok">Купить</button>
+                    <button id="cancelPurchase" class="btn-cancel">Отмена</button>
                 </div>
             </div>
         </div>
