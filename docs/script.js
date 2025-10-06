@@ -12,7 +12,16 @@ class RaiParadiseApp {
         this.userStats = {
             totalSpins: 0,
             totalCoinsWon: 0,
-            friendsInvited: 0
+            friendsInvited: 0,
+            tasksCompleted: 0
+        };
+        
+        // Состояние выполненных заданий
+        this.completedTasks = {
+            telegram: false,
+            instagram: false,
+            video: false,
+            invite: false
         };
         
         this.init();
@@ -27,16 +36,17 @@ class RaiParadiseApp {
     }
     
     loadUserData() {
-        // Загрузка данных из localStorage
         const savedCoins = localStorage.getItem('raiCoins');
         const savedTickets = localStorage.getItem('spinTickets');
         const savedPurchased = localStorage.getItem('purchasedTickets');
         const savedStats = localStorage.getItem('userStats');
+        const savedTasks = localStorage.getItem('completedTasks');
         
         if (savedCoins) this.coinBalance = parseInt(savedCoins);
         if (savedTickets) this.ticketBalance = parseInt(savedTickets);
         if (savedPurchased) this.purchasedTickets = JSON.parse(savedPurchased);
         if (savedStats) this.userStats = JSON.parse(savedStats);
+        if (savedTasks) this.completedTasks = JSON.parse(savedTasks);
     }
     
     saveUserData() {
@@ -44,6 +54,7 @@ class RaiParadiseApp {
         localStorage.setItem('spinTickets', this.ticketBalance.toString());
         localStorage.setItem('purchasedTickets', JSON.stringify(this.purchasedTickets));
         localStorage.setItem('userStats', JSON.stringify(this.userStats));
+        localStorage.setItem('completedTasks', JSON.stringify(this.completedTasks));
     }
     
     initWheel() {
@@ -53,10 +64,11 @@ class RaiParadiseApp {
         this.isSpinning = false;
         this.rotation = 0;
         
+        // Призы с рандомизированными вероятностями (не показываем пользователю)
         this.prizes = [
-            { name: "10-50 рай коинов", probability: 60, color: "#FF6B6B", type: "coins" },
-            { name: "Поцелуй от Рай райского", probability: 20, color: "#4ECDC4", type: "kiss" },
-            { name: "Новый спин билет", probability: 10, color: "#45B7D1", type: "ticket" },
+            { name: "Рай коины", probability: 60, color: "#FF6B6B", type: "coins" },
+            { name: "Поцелуй от Рай", probability: 20, color: "#4ECDC4", type: "kiss" },
+            { name: "Доп. спин", probability: 10, color: "#45B7D1", type: "ticket" },
             { name: "Бутыль пива", probability: 5, color: "#FFD166", type: "beer" },
             { name: "Поездка на Пхукет", probability: 5, color: "#9B5DE5", type: "trip" }
         ];
@@ -85,16 +97,18 @@ class RaiParadiseApp {
             this.ctx.closePath();
             this.ctx.fillStyle = prize.color;
             this.ctx.fill();
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 2;
             this.ctx.stroke();
             
-            // Текст
+            // Текст (только название приза, без процентов)
             this.ctx.save();
             this.ctx.translate(centerX, centerY);
             this.ctx.rotate(startAngle + sliceAngle / 2);
             this.ctx.textAlign = 'right';
             this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 10px Arial';
-            this.ctx.fillText(prize.name.substring(0, 8) + '...', radius - 15, 0);
+            this.ctx.font = 'bold 11px Arial';
+            this.ctx.fillText(prize.name, radius - 15, 0);
             this.ctx.restore();
             
             startAngle = endAngle;
@@ -160,6 +174,11 @@ class RaiParadiseApp {
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.toggle('active', content.id === `${tabName}-tab`);
         });
+        
+        // Обновляем состояние кнопок заданий
+        if (tabName === 'tasks') {
+            this.updateTaskButtons();
+        }
     }
     
     spinWheel() {
@@ -194,7 +213,8 @@ class RaiParadiseApp {
         const startTime = performance.now();
         const startRotation = this.rotation;
         
-        const extraRotations = 5;
+        // Добавляем случайность в анимацию
+        const extraRotations = 5 + Math.random() * 2; // 5-7 дополнительных оборотов
         const winningIndex = this.prizes.indexOf(winningPrize);
         const totalProbability = this.prizes.reduce((sum, prize) => sum + prize.probability, 0);
         
@@ -204,13 +224,23 @@ class RaiParadiseApp {
         }
         const prizeAngle = prizeStartAngle + (Math.PI * this.prizes[winningIndex].probability) / totalProbability;
         
-        const targetRotation = extraRotations * 2 * Math.PI + (2 * Math.PI - prizeAngle);
+        // Добавляем небольшую случайность к конечной позиции
+        const randomOffset = (Math.random() - 0.5) * 0.3; // ±15% случайного смещения
+        const targetRotation = extraRotations * 2 * Math.PI + (2 * Math.PI - prizeAngle) + randomOffset;
         
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / spinDuration, 1);
             
-            const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+            // Нелинейная анимация для большей непредсказуемости
+            const easeOut = (t) => {
+                if (t < 0.7) {
+                    return 1 - Math.pow(1 - t/0.7, 3);
+                } else {
+                    return 1 - Math.pow(1 - (t-0.7)/0.3, 1.5) * 0.3;
+                }
+            };
+            
             const easedProgress = easeOut(progress);
             
             this.rotation = startRotation + (targetRotation - startRotation) * easedProgress;
@@ -239,7 +269,7 @@ class RaiParadiseApp {
         
         switch(prize.type) {
             case 'coins':
-                const coins = Math.floor(Math.random() * 41) + 10;
+                const coins = Math.floor(Math.random() * 41) + 10; // 10-50 coins
                 this.coinBalance += coins;
                 this.userStats.totalCoinsWon += coins;
                 message = `🎉 Вы выиграли ${coins} рай коинов!`;
@@ -261,6 +291,43 @@ class RaiParadiseApp {
         
         this.saveUserData();
         this.showResultModal(message);
+    }
+    
+    // СИСТЕМА ЗАДАНИЙ
+    completeTask(taskId) {
+        if (this.completedTasks[taskId]) {
+            this.showResultModal('❌ Это задание уже выполнено!');
+            return;
+        }
+        
+        // Награда за задание
+        this.ticketBalance += 3;
+        this.coinBalance += 50;
+        this.completedTasks[taskId] = true;
+        this.userStats.tasksCompleted++;
+        
+        this.saveUserData();
+        this.updateUI();
+        this.updateTaskButtons();
+        
+        this.showResultModal('🎉 Задание выполнено! Получено: 3 спин-билета + 50 рай коинов');
+    }
+    
+    updateTaskButtons() {
+        // Обновляем состояние кнопок заданий
+        Object.keys(this.completedTasks).forEach(taskId => {
+            const button = document.querySelector(`[data-task="${taskId}"]`);
+            if (button) {
+                if (this.completedTasks[taskId]) {
+                    button.textContent = '✅ Выполнено';
+                    button.disabled = true;
+                    button.classList.add('completed');
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('completed');
+                }
+            }
+        });
     }
     
     showPurchaseModal(event, cost) {
@@ -318,6 +385,7 @@ class RaiParadiseApp {
         document.getElementById('totalSpins').textContent = this.userStats.totalSpins;
         document.getElementById('totalCoinsWon').textContent = this.userStats.totalCoinsWon.toLocaleString();
         document.getElementById('friendsInvited').textContent = this.userStats.friendsInvited;
+        document.getElementById('tasksCompleted').textContent = this.userStats.tasksCompleted;
         
         // Купленные билеты
         document.getElementById('beerTickets').textContent = this.purchasedTickets.beer;
