@@ -12,6 +12,7 @@
         <!-- Вкладки -->
         <div class="tabs">
             <button class="tab-button active" data-tab="wheel">🎰 Колесо</button>
+            <button class="tab-button" data-tab="tasks">📋 Задания</button>
             <button class="tab-button" data-tab="events">📅 Розыгрыши</button>
             <button class="tab-button" data-tab="profile">👤 Профиль</button>
         </div>
@@ -40,12 +41,97 @@
                 </div>
             </div>
 
+            <div class="prizes-preview">
+                <h3>🎁 Возможные призы</h3>
+                <div class="prizes-grid">
+                    <div class="prize-badge">🪙 Рай коины</div>
+                    <div class="prize-badge">💋 Поцелуй от Рай райского</div>
+                    <div class="prize-badge">🎫 Доп. спин</div>
+                    <div class="prize-badge">🍺 Бутыль пива</div>
+                    <div class="prize-badge">✈️ Поездка на Пхукет</div>
+                </div>
+            </div>
+
             <div class="referral-section">
                 <h3>👥 Пригласи друзей</h3>
                 <p>Получи <strong>3 spin-билета + 50 рай коинов</strong> за каждого друга</p>
                 <div class="referral-buttons">
                     <button id="shareButton" class="btn-share">📤 ОТПРАВИТЬ</button>
                     <button id="copyButton" class="btn-copy">📋 СКОПИРОВАТЬ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА ЗАДАНИЙ -->
+        <div id="tasks-tab" class="tab-content">
+            <div class="tasks-header">
+                <h2>📋 Выполняй задания</h2>
+                <p>Получай спин-билеты и рай коины за простые действия</p>
+            </div>
+
+            <div class="tasks-list">
+                <!-- Задание 1 -->
+                <div class="task-card">
+                    <div class="task-icon">📢</div>
+                    <div class="task-info">
+                        <h4>Подписаться на Telegram канал</h4>
+                        <p>Будь в курсе всех событий Rai Paradise</p>
+                    </div>
+                    <div class="task-reward">
+                        <span class="reward-tickets">+3 🎫</span>
+                        <span class="reward-coins">+50 🪙</span>
+                    </div>
+                    <button class="task-button" data-task="telegram" onclick="raiApp.completeTask('telegram')">
+                        Выполнить
+                    </button>
+                </div>
+
+                <!-- Задание 2 -->
+                <div class="task-card">
+                    <div class="task-icon">📷</div>
+                    <div class="task-info">
+                        <h4>Подписаться на Instagram</h4>
+                        <p>Следи за жизнью Rai Paradise в Instagram</p>
+                    </div>
+                    <div class="task-reward">
+                        <span class="reward-tickets">+3 🎫</span>
+                        <span class="reward-coins">+50 🪙</span>
+                    </div>
+                    <button class="task-button" data-task="instagram" onclick="raiApp.completeTask('instagram')">
+                        Выполнить
+                    </button>
+                </div>
+
+                <!-- Задание 3 -->
+                <div class="task-card">
+                    <div class="task-icon">🎥</div>
+                    <div class="task-info">
+                        <h4>Посмотреть видео</h4>
+                        <p>Узнай больше о Rai Paradise</p>
+                    </div>
+                    <div class="task-reward">
+                        <span class="reward-tickets">+3 🎫</span>
+                        <span class="reward-coins">+50 🪙</span>
+                    </div>
+                    <button class="task-button" data-task="video" onclick="raiApp.completeTask('video')">
+                        Смотреть
+                    </button>
+                </div>
+
+                <!-- Задание 4 -->
+                <div class="task-card">
+                    <div class="task-icon">👥</div>
+                    <div class="task-info">
+                        <h4>Пригласить друга</h4>
+                        <p>Поделись ссылкой с друзьями</p>
+                    </div>
+                    <div class="task-reward">
+                        <span class="reward-tickets">+3 🎫</span>
+                        <span class="reward-coins">+50 🪙</span>
+                    </div>
+                    <button class="task-button" data-task="invite" onclick="raiApp.shareReferral()">
+                        Пригласить
+                    </button>
                 </div>
             </div>
         </div>
@@ -132,6 +218,10 @@
                     <div class="stat-item">
                         <span class="stat-label">Приглашено друзей</span>
                         <span class="stat-value" id="friendsInvited">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Выполнено заданий</span>
+                        <span class="stat-value" id="tasksCompleted">0</span>
                     </div>
                 </div>
 
