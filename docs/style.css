@@ -1,477 +1,163 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #333;
-    min-height: 100vh;
-    padding: 15px;
-    line-height: 1.6;
-}
-
-.container {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-/* ВКЛАДКИ */
-.tabs {
-    display: flex;
-    background: rgba(255,255,255,0.95);
-    border-radius: 15px;
-    padding: 5px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.tab-button {
-    flex: 1;
-    padding: 12px 5px;
-    border: none;
-    background: transparent;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.tab-button.active {
-    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-    color: white;
-    box-shadow: 0 2px 8px rgba(255,107,107,0.3);
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* БАЛАНС */
-.balance-section {
-    margin-bottom: 20px;
-}
-
-.balance-card {
-    background: rgba(255,255,255,0.95);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: space-between;
-}
-
-.balance-item {
-    text-align: center;
-}
-
-.balance-label {
-    display: block;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.balance-value {
-    display: block;
-    font-size: 24px;
-    font-weight: bold;
-    color: #ff6b6b;
-}
-
-/* КОЛЕСО */
-.wheel-section {
-    margin-bottom: 20px;
-}
-
-.wheel-container {
-    position: relative;
-    width: 280px;
-    height: 280px;
-    margin: 0 auto 25px;
-}
-
-#wheelCanvas {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.wheel-pointer {
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 30px;
-    height: 30px;
-    background: #ff6b6b;
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-    z-index: 10;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.spin-button {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-    color: white;
-    border: none;
-    padding: 15px 25px;
-    border-radius: 50px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(255,107,107,0.4);
-    transition: all 0.3s ease;
-    z-index: 5;
-}
-
-.spin-button:hover:not(:disabled) {
-    transform: translate(-50%, -50%) scale(1.05);
-    box-shadow: 0 8px 25px rgba(255,107,107,0.6);
-}
-
-.spin-button:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-/* РОЗЫГРЫШИ */
-.events-header {
+/* Стили для вкладки заданий */
+.tasks-header {
     text-align: center;
     color: white;
     margin-bottom: 20px;
 }
 
-.events-header h2 {
+.tasks-header h2 {
     margin-bottom: 10px;
     font-size: 24px;
 }
 
-.event-date {
+.tasks-header p {
     font-size: 16px;
     opacity: 0.9;
 }
 
-.events-list {
+.tasks-list {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.event-card {
+.task-card {
     background: rgba(255,255,255,0.95);
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.task-icon {
+    font-size: 24px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+    border-radius: 12px;
+}
+
+.task-info {
+    flex: 1;
+}
+
+.task-info h4 {
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 16px;
+}
+
+.task-info p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+}
+
+.task-reward {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     text-align: center;
 }
 
-.event-card.premium {
-    border: 2px solid #ffd700;
-    background: linear-gradient(135deg, #fff9e6, #fff);
-}
-
-.event-prize {
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 10px;
-}
-
-.event-cost {
-    font-size: 18px;
-    color: #ff6b6b;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.event-info {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 15px;
+.reward-tickets, .reward-coins {
     font-size: 14px;
-    color: #666;
+    font-weight: bold;
 }
 
-.buy-ticket-btn {
+.reward-tickets {
+    color: #ff6b6b;
+}
+
+.reward-coins {
+    color: #ffd700;
+}
+
+.task-button {
     background: linear-gradient(45deg, #4ecdc4, #67d8d1);
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 25px;
+    padding: 10px 20px;
+    border-radius: 10px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
-    width: 100%;
-    margin-bottom: 10px;
+    min-width: 100px;
 }
 
-.buy-ticket-btn:hover:not(:disabled) {
+.task-button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
 }
 
-.buy-ticket-btn:disabled {
+.task-button:disabled {
     background: #cccccc;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
-.ticket-count {
-    font-size: 14px;
-    color: #666;
+.task-button.completed {
+    background: #28a745;
 }
 
-/* ПРОФИЛЬ */
-.profile-section {
-    background: rgba(255,255,255,0.95);
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-}
-
-.profile-section h3 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.stat-item {
-    background: rgba(102, 126, 234, 0.1);
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.stat-label {
-    display: block;
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.stat-value {
-    display: block;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-}
-
-.inventory-section h4 {
-    margin-bottom: 15px;
-    color: #333;
-    text-align: center;
-}
-
-.inventory-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.inventory-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: rgba(255, 107, 107, 0.1);
-    border-radius: 10px;
-    border-left: 4px solid #ff6b6b;
-}
-
-.inventory-count {
-    background: #ff6b6b;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-/* РЕФЕРАЛЬНАЯ СИСТЕМА */
-.referral-section {
+/* Стили для предпросмотра призов */
+.prizes-preview {
     background: rgba(255,255,255,0.95);
     padding: 20px;
     border-radius: 15px;
+    margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     text-align: center;
 }
 
-.referral-section h3 {
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.referral-section p {
+.prizes-preview h3 {
     margin-bottom: 15px;
-    color: #666;
-}
-
-.referral-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-share, .btn-copy {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-share {
-    background: linear-gradient(45deg, #4ecdc4, #67d8d1);
-    color: white;
-}
-
-.btn-copy {
-    background: linear-gradient(45deg, #45b7d1, #5fc7e0);
-    color: white;
-}
-
-.btn-share:hover, .btn-copy:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* МОДАЛЬНЫЕ ОКНА */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 20px;
-    max-width: 320px;
-    width: 100%;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    animation: modalAppear 0.3s ease-out;
-}
-
-@keyframes modalAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.8) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-.modal-header {
-    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-    color: white;
-    padding: 20px;
-    border-radius: 20px 20px 0 0;
-    text-align: center;
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.modal-body {
-    padding: 25px 20px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
     color: #333;
 }
 
-.modal-footer {
-    padding: 0 20px 20px;
-    text-align: center;
-    display: flex;
+.prizes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
 }
 
-.btn-ok {
-    flex: 1;
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 12px;
+.prize-badge {
+    background: rgba(102, 126, 234, 0.1);
+    padding: 10px;
     border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    border: 1px solid #667eea;
+    font-size: 14px;
+    color: #333;
 }
 
-.btn-cancel {
-    flex: 1;
-    background: #cccccc;
-    color: #666;
-    border: none;
-    padding: 12px;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-ok:hover {
-    background: #5a6fd8;
-    transform: scale(1.05);
-}
-
-.btn-cancel:hover {
-    background: #bbbbbb;
-}
-
-/* АДАПТИВНОСТЬ */
+/* Адаптивность для заданий */
 @media (max-width: 480px) {
-    .container {
-        padding: 10px;
+    .task-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
     }
     
-    .wheel-container {
-        width: 260px;
-        height: 260px;
+    .task-info {
+        text-align: center;
     }
     
-    .balance-value {
-        font-size: 20px;
-    }
-    
-    .stats-grid {
+    .prizes-grid {
         grid-template-columns: 1fr;
     }
     
-    .referral-buttons {
-        flex-direction: column;
+    .tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        flex: 1 0 45%;
+        margin-bottom: 5px;
     }
 }
