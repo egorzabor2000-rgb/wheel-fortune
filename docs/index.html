@@ -3,464 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rai Paradise - Колесо Фортуны</title>
+    <title>Rai Paradise</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Базовые стили прямо в HTML для быстрой загрузки */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            line-height: 1.4;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <!-- Вкладки -->
+        <!-- Простые вкладки -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="wheel">🎰 Колесо</button>
-            <button class="tab-button" data-tab="tasks">📋 Задания</button>
-            <button class="tab-button" data-tab="events">📅 Розыгрыши</button>
-            <button class="tab-button" data-tab="profile">👤 Профиль</button>
+            <button class="tab-btn active" data-tab="wheel">Колесо</button>
+            <button class="tab-btn" data-tab="tasks">Задания</button>
+            <button class="tab-btn" data-tab="events">Розыгрыши</button>
+            <button class="tab-btn" data-tab="profile">Профиль</button>
         </div>
 
-        <!-- БАЛАНС -->
-        <div class="balance-section">
-            <div class="balance-card">
-                <div class="balance-item">
-                    <span class="balance-label">🎫 Spin-билеты</span>
-                    <span class="balance-value" id="ticketCount">3</span>
-                </div>
-                <div class="balance-item">
-                    <span class="balance-label">🪙 Рай коины</span>
-                    <span class="balance-value" id="coinBalance">0</span>
-                </div>
+        <!-- Баланс -->
+        <div class="balance">
+            <div class="balance-item">
+                <span>Билеты:</span>
+                <strong id="ticketCount">3</strong>
+            </div>
+            <div class="balance-item">
+                <span>Коины:</span>
+                <strong id="coinBalance">0</strong>
             </div>
         </div>
 
-        <!-- ВКЛАДКА КОЛЕСА -->
+        <!-- Колесо -->
         <div id="wheel-tab" class="tab-content active">
             <div class="wheel-section">
                 <div class="wheel-container">
-                    <canvas id="wheelCanvas" width="300" height="300"></canvas>
-                    <div class="wheel-pointer"></div>
-                    <button id="spinButton" class="spin-button">Крутить колесо</button>
+                    <canvas id="wheelCanvas" width="280" height="280"></canvas>
+                    <div class="pointer"></div>
                 </div>
+                <button id="spinButton" class="spin-btn">Крутить</button>
             </div>
 
-            <div class="prizes-preview">
-                <h3>🎁 Возможные призы</h3>
-                <div class="prizes-grid">
-                    <div class="prize-badge">🪙 Рай коины</div>
-                    <div class="prize-badge">💋 Поцелуй от Рай райского</div>
-                    <div class="prize-badge">🎫 Доп. спин</div>
-                    <div class="prize-badge">🍺 Бутыль пива</div>
-                    <div class="prize-badge">✈️ Поездка на Пхукет</div>
-                </div>
-            </div>
-
-            <div class="referral-section">
-                <h3>👥 Пригласи друзей</h3>
-                <p>Получи <strong>3 spin-билета + 50 рай коинов</strong> за каждого друга</p>
-                <div class="referral-stats">
-                    <div class="referral-stat">
-                        <span>Приглашено друзей:</span>
-                        <strong id="referralCount">0</strong>
-                    </div>
-                    <div class="referral-stat">
-                        <span>Всего заработано:</span>
-                        <strong id="referralEarned">0</strong>
-                    </div>
-                </div>
-                <div class="referral-buttons">
-                    <button id="shareButton" class="btn-share">📤 ОТПРАВИТЬ</button>
-                    <button id="copyButton" class="btn-copy">📋 СКОПИРОВАТЬ</button>
+            <div class="referral-simple">
+                <p>Пригласи друга → получи 3 билета + 50 коинов</p>
+                <div class="ref-buttons">
+                    <button id="shareButton" class="btn">Поделиться</button>
+                    <button id="copyButton" class="btn">Копировать</button>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА ЗАДАНИЙ -->
+        <!-- Задания -->
         <div id="tasks-tab" class="tab-content">
-            <div class="tasks-header">
-                <h2>📋 Выполняй задания</h2>
-                <p>Получай спин-билеты и рай коины за простые действия</p>
+            <div class="section">
+                <h3>Главное задание</h3>
+                <div class="main-task">
+                    <p><strong>Прогрев-гайд</strong></p>
+                    <p>Посмотри 4 блока видео</p>
+                    <p>Награда: 10 билетов + 1000 коинов</p>
+                    <button class="btn" onclick="app.openWarmup()">Начать</button>
+                </div>
             </div>
 
-            <!-- ГЛАВНОЕ ЗАДАНИЕ - ПРОГРЕВ -->
-            <div class="main-task-card">
-                <div class="main-task-header">
-                    <div class="main-task-icon">🔥</div>
-                    <div class="main-task-info">
-                        <h3>Прогрев-мини гайд</h3>
-                        <p>Познакомься с внутренним лором Rai Paradise</p>
+            <div class="section">
+                <h3>Другие задания</h3>
+                <div class="task-list">
+                    <div class="task">
+                        <span>Подписка на Telegram</span>
+                        <button class="btn-small" onclick="app.completeTask('telegram')">Выполнить</button>
                     </div>
-                    <div class="main-task-reward">
-                        <span class="main-reward">+10 🎫</span>
-                        <span class="main-reward">+1000 🪙</span>
+                    <div class="task">
+                        <span>Подписка на Instagram</span>
+                        <button class="btn-small" onclick="app.completeTask('instagram')">Выполнить</button>
                     </div>
-                </div>
-                
-                <div class="warmup-progress">
-                    <div class="progress-header">
-                        <span>Прогресс по блокам:</span>
-                        <span id="warmupProgress">0/4</span>
+                    <div class="task">
+                        <span>Посмотреть видео</span>
+                        <button class="btn-small" onclick="app.completeTask('video')">Смотреть</button>
                     </div>
-                    <div class="progress-bars">
-                        <div class="progress-block" data-block="1">
-                            <span>Блок 1</span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" data-progress="0"></div>
-                            </div>
-                        </div>
-                        <div class="progress-block" data-block="2">
-                            <span>Блок 2</span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" data-progress="0"></div>
-                            </div>
-                        </div>
-                        <div class="progress-block" data-block="3">
-                            <span>Блок 3</span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" data-progress="0"></div>
-                            </div>
-                        </div>
-                        <div class="progress-block" data-block="4">
-                            <span>Блок 4</span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" data-progress="0"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="main-task-button" onclick="raiApp.openWarmupGuide()">
-                    Начать просмотр гайда
-                </button>
-            </div>
-
-            <div class="tasks-list">
-                <!-- Задание 1 -->
-                <div class="task-card">
-                    <div class="task-icon">📢</div>
-                    <div class="task-info">
-                        <h4>Подписаться на Telegram канал</h4>
-                        <p>Будь в курсе всех событий Rai Paradise</p>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-tickets">+3 🎫</span>
-                        <span class="reward-coins">+50 🪙</span>
-                    </div>
-                    <button class="task-button" data-task="telegram" onclick="raiApp.completeTask('telegram')">
-                        Выполнить
-                    </button>
-                </div>
-
-                <!-- Задание 2 -->
-                <div class="task-card">
-                    <div class="task-icon">📷</div>
-                    <div class="task-info">
-                        <h4>Подписаться на Instagram</h4>
-                        <p>Следи за жизнью Rai Paradise в Instagram</p>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-tickets">+3 🎫</span>
-                        <span class="reward-coins">+50 🪙</span>
-                    </div>
-                    <button class="task-button" data-task="instagram" onclick="raiApp.completeTask('instagram')">
-                        Выполнить
-                    </button>
-                </div>
-
-                <!-- Задание 3 -->
-                <div class="task-card">
-                    <div class="task-icon">🎥</div>
-                    <div class="task-info">
-                        <h4>Посмотреть видео</h4>
-                        <p>Узнай больше о Rai Paradise</p>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-tickets">+3 🎫</span>
-                        <span class="reward-coins">+50 🪙</span>
-                    </div>
-                    <button class="task-button" data-task="video" onclick="raiApp.completeTask('video')">
-                        Смотреть
-                    </button>
-                </div>
-
-                <!-- Задание 4 -->
-                <div class="task-card">
-                    <div class="task-icon">👥</div>
-                    <div class="task-info">
-                        <h4>Пригласить друга</h4>
-                        <p>Поделись ссылкой с друзьями</p>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-tickets">+3 🎫</span>
-                        <span class="reward-coins">+50 🪙</span>
-                    </div>
-                    <button class="task-button" data-task="invite" onclick="raiApp.shareReferral()">
-                        Пригласить
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА РОЗЫГРЫШЕЙ -->
+        <!-- Розыгрыши -->
         <div id="events-tab" class="tab-content">
-            <div class="events-header">
-                <h2>🎁 Ближайшие розыгрыши</h2>
-                <p class="event-date">Следующий ивент: <strong>20 ноября</strong></p>
-            </div>
-
-            <div class="events-list">
-                <!-- Розыгрыш 1 -->
-                <div class="event-card">
-                    <div class="event-prize">🍺 Ящик пива</div>
-                    <div class="event-cost">100 рай коинов</div>
-                    <div class="event-info">
-                        <span>🎫 Билет на розыгрыш</span>
-                        <span>📅 20 ноября</span>
+            <div class="section">
+                <h3>Розыгрыши 20 ноября</h3>
+                <div class="event-list">
+                    <div class="event">
+                        <span>🍺 Пиво</span>
+                        <span>100 коинов</span>
+                        <button class="btn-small" onclick="app.buyTicket('beer', 100)">Купить</button>
                     </div>
-                    <button class="buy-ticket-btn" data-event="beer" data-cost="100">
-                        Купить билет
-                    </button>
-                    <div class="ticket-count">Куплено: <span id="beerTickets">0</span></div>
-                </div>
-
-                <!-- Розыгрыш 2 -->
-                <div class="event-card">
-                    <div class="event-prize">💆‍♂️ Массаж</div>
-                    <div class="event-cost">300 рай коинов</div>
-                    <div class="event-info">
-                        <span>🎫 Билет на розыгрыш</span>
-                        <span>📅 20 ноября</span>
+                    <div class="event">
+                        <span>💆‍♂️ Массаж</span>
+                        <span>300 коинов</span>
+                        <button class="btn-small" onclick="app.buyTicket('massage', 300)">Купить</button>
                     </div>
-                    <button class="buy-ticket-btn" data-event="massage" data-cost="300">
-                        Купить билет
-                    </button>
-                    <div class="ticket-count">Куплено: <span id="massageTickets">0</span></div>
-                </div>
-
-                <!-- Розыгрыш 3 -->
-                <div class="event-card">
-                    <div class="event-prize">🧖‍♂️ Парение</div>
-                    <div class="event-cost">1,000 рай коинов</div>
-                    <div class="event-info">
-                        <span>🎫 Билет на розыгрыш</span>
-                        <span>📅 20 ноября</span>
+                    <div class="event">
+                        <span>🧖‍♂️ Парение</span>
+                        <span>1000 коинов</span>
+                        <button class="btn-small" onclick="app.buyTicket('sauna', 1000)">Купить</button>
                     </div>
-                    <button class="buy-ticket-btn" data-event="sauna" data-cost="1000">
-                        Купить билет
-                    </button>
-                    <div class="ticket-count">Куплено: <span id="saunaTickets">0</span></div>
-                </div>
-
-                <!-- Розыгрыш 4 -->
-                <div class="event-card premium">
-                    <div class="event-prize">📱 iPhone 17 Pro</div>
-                    <div class="event-cost">10,000,000 рай коинов</div>
-                    <div class="event-info">
-                        <span>🎫 Билет на розыгрыш</span>
-                        <span>📅 20 ноября</span>
-                    </div>
-                    <button class="buy-ticket-btn" data-event="iphone" data-cost="10000000">
-                        Купить билет
-                    </button>
-                    <div class="ticket-count">Куплено: <span id="iphoneTickets">0</span></div>
                 </div>
             </div>
         </div>
 
-        <!-- ВКЛАДКА ПРОФИЛЯ -->
+        <!-- Профиль -->
         <div id="profile-tab" class="tab-content">
-            <div class="profile-section">
-                <h3>📊 Ваша статистика</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Всего вращений</span>
-                        <span class="stat-value" id="totalSpins">0</span>
+            <div class="section">
+                <h3>Статистика</h3>
+                <div class="stats">
+                    <div class="stat">
+                        <span>Вращений:</span>
+                        <span id="totalSpins">0</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Выиграно коинов</span>
-                        <span class="stat-value" id="totalCoinsWon">0</span>
+                    <div class="stat">
+                        <span>Выиграно коинов:</span>
+                        <span id="totalCoins">0</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Приглашено друзей</span>
-                        <span class="stat-value" id="friendsInvited">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Выполнено заданий</span>
-                        <span class="stat-value" id="tasksCompleted">0</span>
-                    </div>
-                </div>
-
-                <div class="referral-profile">
-                    <h4>👥 Реферальная программа</h4>
-                    <div class="referral-stats-profile">
-                        <div class="referral-stat-profile">
-                            <span>Приглашено друзей:</span>
-                            <span id="profileReferralCount">0</span>
-                        </div>
-                        <div class="referral-stat-profile">
-                            <span>Заработано спинов:</span>
-                            <span id="profileReferralTickets">0</span>
-                        </div>
-                        <div class="referral-stat-profile">
-                            <span>Заработано коинов:</span>
-                            <span id="profileReferralCoins">0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="inventory-section">
-                    <h4>🎫 Ваши билеты на розыгрыши</h4>
-                    <div class="inventory-list">
-                        <div class="inventory-item">
-                            <span>🍺 Розыгрыш пива</span>
-                            <span class="inventory-count" id="inventoryBeer">0</span>
-                        </div>
-                        <div class="inventory-item">
-                            <span>💆‍♂️ Розыгрыш массажа</span>
-                            <span class="inventory-count" id="inventoryMassage">0</span>
-                        </div>
-                        <div class="inventory-item">
-                            <span>🧖‍♂️ Розыгрыш парения</span>
-                            <span class="inventory-count" id="inventorySauna">0</span>
-                        </div>
-                        <div class="inventory-item">
-                            <span>📱 Розыгрыш iPhone</span>
-                            <span class="inventory-count" id="inventoryIphone">0</span>
-                        </div>
+                    <div class="stat">
+                        <span>Приглашено друзей:</span>
+                        <span id="friendsCount">0</span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- МОДАЛЬНЫЕ ОКНА -->
-        <div id="resultModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>🎉 Поздравляем!</h2>
-                </div>
-                <div class="modal-body">
-                    <p id="prizeText"></p>
-                </div>
-                <div class="modal-footer">
-                    <button id="closeModal" class="btn-ok">OK</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="purchaseModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>🎫 Покупка билета</h2>
-                </div>
-                <div class="modal-body">
-                    <p id="purchaseText"></p>
-                </div>
-                <div class="modal-footer">
-                    <button id="confirmPurchase" class="btn-ok">Купить</button>
-                    <button id="cancelPurchase" class="btn-cancel">Отмена</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- МОДАЛЬНОЕ ОКНО ПРОГРЕВА -->
-        <div id="warmupModal" class="modal">
-            <div class="modal-content warmup-modal">
-                <div class="modal-header">
-                    <h2>🔥 Прогрев-мини гайд</h2>
-                    <p>Познакомься с внутренним лором Rai Paradise</p>
-                </div>
-                <div class="modal-body">
-                    <div class="warmup-container">
-                        <div class="warmup-block" data-block="1">
-                            <h3>Блок 1: Знакомство с Rai Paradise</h3>
-                            <div class="videos-list">
-                                <div class="video-item" data-video="1">
-                                    <span>🎥 Видео 1: История создания</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(1, 1)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="2">
-                                    <span>🎥 Видео 2: Философия проекта</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(1, 2)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="3">
-                                    <span>🎥 Видео 3: Кто такой Рай райский</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(1, 3)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="4">
-                                    <span>🎥 Видео 4: Наше сообщество</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(1, 4)">Смотреть</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="warmup-block" data-block="2">
-                            <h3>Блок 2: Ценности и традиции</h3>
-                            <div class="videos-list">
-                                <div class="video-item" data-video="1">
-                                    <span>🎥 Видео 1: Главные ценности</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(2, 1)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="2">
-                                    <span>🎥 Видео 2: Ритуалы и традиции</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(2, 2)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="3">
-                                    <span>🎥 Видео 3: Язык сообщества</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(2, 3)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="4">
-                                    <span>🎥 Видео 4: Кодекс поведения</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(2, 4)">Смотреть</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="warmup-block" data-block="3">
-                            <h3>Блок 3: Сообщество и события</h3>
-                            <div class="videos-list">
-                                <div class="video-item" data-video="1">
-                                    <span>🎥 Видео 1: Наши ивенты</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(3, 1)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="2">
-                                    <span>🎥 Видео 2: Знаменитые гости</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(3, 2)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="3">
-                                    <span>🎥 Видео 3: Истории успеха</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(3, 3)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="4">
-                                    <span>🎥 Видео 4: Будущие планы</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(3, 4)">Смотреть</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="warmup-block" data-block="4">
-                            <h3>Блок 4: Стань частью семьи</h3>
-                            <div class="videos-list">
-                                <div class="video-item" data-video="1">
-                                    <span>🎥 Видео 1: Как участвовать</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(4, 1)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="2">
-                                    <span>🎥 Видео 2: Бонусы для активных</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(4, 2)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="3">
-                                    <span>🎥 Видео 3: Система рангов</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(4, 3)">Смотреть</button>
-                                </div>
-                                <div class="video-item" data-video="4">
-                                    <span>🎥 Видео 4: Наше будущее</span>
-                                    <button class="watch-btn" onclick="raiApp.watchVideo(4, 4)">Смотреть</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="closeWarmupModal" class="btn-cancel">Закрыть</button>
-                </div>
-            </div>
+    <!-- Модальные окна -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <p id="modalText"></p>
+            <button onclick="app.closeModal()" class="btn">OK</button>
         </div>
     </div>
 
